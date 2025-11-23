@@ -1,0 +1,34 @@
+{
+  "groups": [
+    {
+      "name": "j-multi-cache",
+      "type": "io.github.vevoly.jmulticache.starter.auto_configure.JMultiCacheProperties",
+      "sourceType": "io.github.vevoly.jmulticache.starter.auto_configure.JMultiCacheProperties"
+    }
+  ],
+  "properties": [
+    {
+      "name": "j-multi-cache.enabled",
+      "type": "java.lang.Boolean",
+      "description": "Master switch to enable or disable j-multi-cache.",
+      "defaultValue": true
+    },
+    {
+      "name": "j-multi-cache.preload.enabled",
+      "type": "java.lang.Boolean",
+      "description": "Whether to enable cache preloading on application startup.",
+      "defaultValue": true
+    },
+    {
+      "name": "j-multi-cache.caffeine.default",
+      "type": "java.lang.String",
+      "description": "Default Caffeine cache specification string.",
+      "defaultValue": "maximumSize=500,expireAfterWrite=300s"
+    },
+    {
+      "name": "j-multi-cache.configs",
+      "type": "java.util.Map<java.lang.String, io.github.vevoly.jmulticache.api.model.CacheConfig>",
+      "description": "Map of named cache configurations."
+    }
+  ]
+}
