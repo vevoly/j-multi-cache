@@ -42,4 +42,12 @@ public interface JMultiCacheAdmin {
      * @param keyParams      用于构建要清除的缓存键的动态参数。/ The dynamic parameters to build the final cache key to evict.
      */
     void evict(String multiCacheName, Object... keyParams);
+
+    /**
+     * 清除一个缓存项。
+     * 仅L1本地缓存
+     * @param multiCacheName
+     * @param keyParams
+     */
+    void evictL1(String multiCacheName, Object... keyParams);
 }

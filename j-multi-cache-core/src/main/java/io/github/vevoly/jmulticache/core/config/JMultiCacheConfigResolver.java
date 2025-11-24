@@ -6,7 +6,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.github.vevoly.jmulticache.api.JMultiCacheConfigName;
 import io.github.vevoly.jmulticache.api.config.ResolvedJMultiCacheConfig;
 import io.github.vevoly.jmulticache.api.constants.DefaultStoragePolicies;
-import io.github.vevoly.jmulticache.api.constants.DefaultStorageTypes;
 import io.github.vevoly.jmulticache.api.constants.JMultiCacheConstants;
 import io.github.vevoly.jmulticache.core.properties.JMultiCacheProperties;
 import io.github.vevoly.jmulticache.core.properties.JMultiCacheRootProperties;
@@ -91,9 +90,6 @@ public class JMultiCacheConfigResolver implements InitializingBean {
                 // 加载并预解析类型 / Load and pre-parse types
                 ClassLoader contextClassLoader = Thread.currentThread().getContextClassLoader();
                 Class<?> entityClass = Class.forName(props.getEntityClass(), true, contextClassLoader);
-                TypeReference<?> typeReference = JavaTypeReference.from(entityClass,
-                        Optional.ofNullable(props.getStorageType()).orElse(defaults.getStorageType()),
-                        objectMapper.getTypeFactory());
 
                 // =========================================================
                 // 1. 处理可为空的字段 (TTL) - 允许为 null 以表示禁用
@@ -130,8 +126,8 @@ public class JMultiCacheConfigResolver implements InitializingBean {
                         .or(() -> Optional.ofNullable(defaults.getEmptyCacheTtl()))
                         .orElse(Duration.ofSeconds(JMultiCacheConstants.EMPTY_CACHE_REDIS_TTL));
                 // Empty Value Mark: Config -> Default -> Constant
-                String finalEmptyValueMark = Optional.ofNullable(props.getEmptyValueMark())
-                        .or(() -> Optional.ofNullable(defaults.getEmptyValueMark()))
+                String finalEmptyValueMark = Optional.ofNullable(props.getEmptyCacheValue())
+                        .or(() -> Optional.ofNullable(defaults.getEmptyCacheValue()))
                         .orElse(JMultiCacheConstants.EMPTY_CACHE_VALUE);
                 // Business Key: Config -> Default -> Constant ("")
                 String finalBusinessKey = Optional.ofNullable(props.getBusinessKey())
@@ -150,12 +146,12 @@ public class JMultiCacheConfigResolver implements InitializingBean {
                 // =========================================================
                 // 4. 构建对象
                 // =========================================================
+                TypeReference<?> typeReference = JavaTypeReference.from(entityClass, finalStorageType, objectMapper.getTypeFactory());
                 ResolvedJMultiCacheConfig resolved = ResolvedJMultiCacheConfig.builder()
                         .name(configName)
                         .entityClass(entityClass)
                         .typeReference(typeReference)
                         .namespace(namespace)
-                        // 填入计算好的值
                         .redisTtl(finalRedisTtl)
                         .localTtl(finalLocalTtl)
                         .localMaxSize(finalLocalMaxSize)

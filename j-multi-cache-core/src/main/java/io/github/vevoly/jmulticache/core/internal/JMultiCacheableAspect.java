@@ -1,10 +1,9 @@
-package io.github.vevoly.jmulticache.core.aop;
+package io.github.vevoly.jmulticache.core.internal;
 
 import io.github.vevoly.jmulticache.api.annotation.JMultiCacheable;
 import io.github.vevoly.jmulticache.api.config.ResolvedJMultiCacheConfig;
 import io.github.vevoly.jmulticache.api.utils.JMultiCacheHelper;
 import io.github.vevoly.jmulticache.core.config.JMultiCacheConfigResolver;
-import io.github.vevoly.jmulticache.core.manager.JMultiCacheManager;
 import io.github.vevoly.jmulticache.core.utils.I18nLogger;
 import io.github.vevoly.jmulticache.core.utils.JMultiCacheInternalHelper;
 import lombok.extern.slf4j.Slf4j;
@@ -46,7 +45,7 @@ import java.util.function.Supplier;
 @Component
 public class JMultiCacheableAspect {
 
-    private final JMultiCacheManager jMultiCacheManager;
+    private final JMultiCacheImpl jMultiCacheManager;
     private final JMultiCacheConfigResolver configResolver;
     private final I18nLogger i18nLogger = new I18nLogger(log);
     private final ExpressionParser parser = new SpelExpressionParser();
@@ -55,7 +54,7 @@ public class JMultiCacheableAspect {
     // 缓存反射获取的注解信息，避免多次查找 / Cache reflection info to avoid repeated lookups
     private static final Map<Method, JMultiCacheable> ANNOTATION_CACHE = new ConcurrentHashMap<>();
 
-    public JMultiCacheableAspect(JMultiCacheManager jMultiCacheManager, JMultiCacheConfigResolver configResolver) {
+    public JMultiCacheableAspect(JMultiCacheImpl jMultiCacheManager, JMultiCacheConfigResolver configResolver) {
         this.jMultiCacheManager = jMultiCacheManager;
         this.configResolver = configResolver;
     }
@@ -104,7 +103,7 @@ public class JMultiCacheableAspect {
      */
     private Object handleSingleQuery(ProceedingJoinPoint joinPoint, ResolvedJMultiCacheConfig config) {
         // 从方法参数中解析 Key 的各部分值 (支持 SpEL)
-        String keyPart = JMultiCacheInternalHelper.getKeyValueFromMethodArgs(joinPoint, config.getKeyField());
+        String[] keyPart = JMultiCacheInternalHelper.getKeyValuesFromMethodArgs(joinPoint, config.getKeyField());
         // 定义回源加载器
         Supplier<Object> dbLoader = () -> {
             try {

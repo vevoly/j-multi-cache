@@ -1,4 +1,4 @@
-package io.github.vevoly.jmulticache.core.manager;
+package io.github.vevoly.jmulticache.core.internal;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.github.benmanes.caffeine.cache.Cache;
@@ -23,7 +23,6 @@ import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.cache.CacheManager;
-import org.springframework.stereotype.Component;
 import org.springframework.util.StopWatch;
 
 import java.util.*;
@@ -48,8 +47,7 @@ import java.util.stream.Collectors;
  * @author vevoly
  */
 @Slf4j
-@Component
-public class JMultiCacheManager implements JMultiCache, JMultiCacheAdmin {
+class JMultiCacheImpl implements JMultiCache, JMultiCacheAdmin {
 
     private final RedisClient redisClient;
     private final CacheManager caffeineCacheManager;
@@ -59,7 +57,7 @@ public class JMultiCacheManager implements JMultiCache, JMultiCacheAdmin {
     private final I18nLogger i18nLog = new I18nLogger(log);
     public static final String LOG_PREFIX = "[JMultiCache] ";
 
-    public JMultiCacheManager(
+    JMultiCacheImpl(
             RedisClient redisClient,
             @Qualifier("jMultiCacheCaffeineManager") CacheManager caffeineCacheManager,
             JMultiCacheConfigResolver configResolver,
@@ -128,7 +126,12 @@ public class JMultiCacheManager implements JMultiCache, JMultiCacheAdmin {
 
     @Override
     public void evict(String multiCacheName, Object... keyParams) {
-        evictUnified(multiCacheName, keyParams);
+        evictUnified(multiCacheName, false, keyParams);
+    }
+
+    @Override
+    public void evictL1(String multiCacheName, Object... keyParams) {
+        evictUnified(multiCacheName, true, keyParams);
     }
 
     /**
@@ -626,9 +629,11 @@ public class JMultiCacheManager implements JMultiCache, JMultiCacheAdmin {
      * Evicts a cache item.
      *
      * @param multiCacheName 缓存配置的唯一名称。/ The unique name of the cache configuration.
+     * @param onlyL1         是否只清除 L1 本地缓存。/ Whether to only clear the L1 local cache.
      * @param keyParams      用于构建要清除的缓存键的动态参数。/ The dynamic parameters to build the final cache key to evict.
+     *
      */
-    private void evictUnified(String multiCacheName, Object... keyParams) {
+    private void evictUnified(String multiCacheName, boolean onlyL1, Object... keyParams) {
         // 1. 解析配置 / Resolve configuration
         ResolvedJMultiCacheConfig config = configResolver.resolve(multiCacheName);
         // 2. 构建完整的 Key / Build the full Key
@@ -637,9 +642,11 @@ public class JMultiCacheManager implements JMultiCache, JMultiCacheAdmin {
                 .toArray(String[]::new);
         String fullKey = JMultiCacheHelper.buildKey(config.getNamespace(), stringParams);
         // 3. 清除 L2 (Redis) / Evict L2 (Redis)
-        if (config.isUseL2()) {
-            redisClient.delete(fullKey);
-            i18nLog.info("evict.l2_success", fullKey);
+        if (!onlyL1) {
+            if (config.isUseL2()) {
+                redisClient.delete(fullKey);
+                i18nLog.info("evict.l2_success", fullKey);
+            }
         }
         // 4. 清除 L1 (本地) / Evict L1 (Local)
         if (config.isUseL1()) {

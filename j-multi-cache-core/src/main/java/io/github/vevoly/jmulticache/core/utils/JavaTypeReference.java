@@ -37,10 +37,10 @@ public final class JavaTypeReference {
                 // 对于 HASH，我们假设 Key 是 String，Value 是 entityClass
                 javaType = typeFactory.constructMapType(Map.class, String.class, entityClass);
                 break;
-            case DefaultStorageTypes.STRING:
             case DefaultStorageTypes.PAGE:
                 javaType = typeFactory.constructParametricType(Page.class, entityClass);
                 break;
+            case DefaultStorageTypes.STRING:
             default:
                 // 对于 STRING, PAGE, 或其他自定义类型，直接使用 entityClass 本身的类型
                 javaType = typeFactory.constructType(entityClass);

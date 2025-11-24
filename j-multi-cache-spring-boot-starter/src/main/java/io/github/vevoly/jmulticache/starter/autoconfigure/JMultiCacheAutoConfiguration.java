@@ -3,27 +3,23 @@ package io.github.vevoly.jmulticache.starter.autoconfigure;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import io.github.vevoly.jmulticache.api.redis.RedisClient;
-import io.github.vevoly.jmulticache.api.strategy.RedisStorageStrategy;
-import io.github.vevoly.jmulticache.core.aop.JMultiCacheableAspect;
+import io.github.vevoly.jmulticache.core.internal.JMultiCacheableAspect;
 import io.github.vevoly.jmulticache.core.config.JMultiCacheConfigResolver;
-import io.github.vevoly.jmulticache.core.manager.JMultiCacheManager;
+import io.github.vevoly.jmulticache.core.internal.JMultiCacheManagerConfiguration;
 import io.github.vevoly.jmulticache.core.processor.JMultiCachePreloadProcessor;
 import io.github.vevoly.jmulticache.core.properties.JMultiCacheRootProperties;
 import io.github.vevoly.jmulticache.core.redis.RedissonRedisClient;
 import io.github.vevoly.jmulticache.core.strategy.impl.*;
 import lombok.extern.slf4j.Slf4j;
 import org.redisson.api.RedissonClient;
-import org.redisson.spring.starter.RedissonAutoConfiguration;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.AutoConfigureAfter;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
-import org.springframework.cache.CacheManager;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 
@@ -50,7 +46,7 @@ import java.util.concurrent.ThreadPoolExecutor;
  * @author vevoly
  */
 @Slf4j
-@Configuration
+@AutoConfiguration
 @ConditionalOnClass({RedissonClient.class, Caffeine.class})
 @EnableConfigurationProperties(JMultiCacheRootProperties.class)
 @AutoConfigureAfter(org.redisson.spring.starter.RedissonAutoConfiguration.class)
@@ -63,7 +59,8 @@ import java.util.concurrent.ThreadPoolExecutor;
         PageStorageStrategy.class,
         JMultiCacheableAspect.class,
         JMultiCachePreloadProcessor.class,
-        JMultiCacheCaffeineConfiguration.class
+        JMultiCacheManagerConfiguration.class,
+        JMultiCacheCaffeineConfiguration.class,
 })
 public class JMultiCacheAutoConfiguration {
 
@@ -116,22 +113,5 @@ public class JMultiCacheAutoConfiguration {
     @ConditionalOnMissingBean(RedisClient.class)
     public RedisClient redisClient(RedissonClient redissonClient) {
         return new RedissonRedisClient(redissonClient);
-    }
-
-    /**
-     * 5. 配置核心管理器 (JMultiCacheManager)
-     * 它是框架的“大脑”，通过自动装配将所有组件连接起来。
-     * <p>
-     * 注意：strategies 参数会由 Spring 自动收集所有实现了 RedisStorageStrategy 的 Bean (包括上面 @Import 的和用户自定义的)。
-     */
-    @Bean
-    public JMultiCacheManager jMultiCacheManager(
-            RedisClient redisClient,
-            @Qualifier("jMultiCacheCaffeineManager") CacheManager caffeineCacheManager,
-            JMultiCacheConfigResolver configResolver,
-            @Qualifier("jMultiCacheAsyncExecutor") Executor asyncExecutor,
-            java.util.List<RedisStorageStrategy<?>> strategies
-    ) {
-        return new JMultiCacheManager(redisClient, caffeineCacheManager, configResolver, asyncExecutor, strategies);
     }
 }

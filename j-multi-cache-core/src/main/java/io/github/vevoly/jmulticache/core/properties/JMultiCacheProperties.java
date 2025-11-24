@@ -81,7 +81,7 @@ public class JMultiCacheProperties {
      * <p>
      * A custom string marker used to represent a "null" value in the cache.
      */
-    private String emptyValueMark;
+    private String emptyCacheValue;
 
     /**
      * 空值标记在 Redis 中的自定义过期时间。

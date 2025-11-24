@@ -1,10 +1,10 @@
 package io.github.vevoly.jmulticache.core.processor;
 
+import io.github.vevoly.jmulticache.api.JMultiCacheAdmin;
 import io.github.vevoly.jmulticache.api.annotation.JMultiCachePreloadable;
 import io.github.vevoly.jmulticache.api.constants.JMultiCacheConstants;
 import io.github.vevoly.jmulticache.core.config.JMultiCacheConfigResolver;
 import io.github.vevoly.jmulticache.api.config.ResolvedJMultiCacheConfig;
-import io.github.vevoly.jmulticache.core.manager.JMultiCacheManager;
 import io.github.vevoly.jmulticache.core.utils.JMultiCacheInternalHelper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -35,7 +35,7 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class JMultiCachePreloadProcessor {
 
-    private final JMultiCacheManager multiCacheManager;
+    private final JMultiCacheAdmin jMultiCacheAdmin;
     private final JMultiCacheConfigResolver multiCacheConfigResolver;
 
     private static final String LOG_PREFIX = "[JMultiCache-Preload] ";
@@ -74,7 +74,7 @@ public class JMultiCachePreloadProcessor {
             // 步骤 4: 构建待预热的数据 Map / Step 4: Build the data map for preloading
             Map<String, Object> dataToPreload = JMultiCacheInternalHelper.groupDataForPreload(dataList, resolvedConfig, keyExpr);
             // 步骤 5: 写入缓存 / Step 5: Write to cache
-            int count = multiCacheManager.preloadMultiCache(resolvedConfig.getName(), dataToPreload);
+            int count = jMultiCacheAdmin.preloadMultiCache(resolvedConfig.getName(), dataToPreload);
             log.info(LOG_PREFIX + "Preload for '{}' completed, successfully cached {} items.", resolvedConfig.getNamespace(), count);
             return count;
         } catch (Exception e) {

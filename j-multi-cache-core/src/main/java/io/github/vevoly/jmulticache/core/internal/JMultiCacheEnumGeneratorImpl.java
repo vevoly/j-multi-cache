@@ -1,4 +1,4 @@
-package io.github.vevoly.jmulticache.core.manager;
+package io.github.vevoly.jmulticache.core.internal;
 
 import io.github.vevoly.jmulticache.api.JMultiCacheEnumGenerator;
 import org.yaml.snakeyaml.Yaml;
