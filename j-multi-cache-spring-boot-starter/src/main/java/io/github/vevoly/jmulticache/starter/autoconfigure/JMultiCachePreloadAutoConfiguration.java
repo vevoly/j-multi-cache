@@ -19,7 +19,7 @@ import java.util.concurrent.Executor;
 
 /**
  * 緩存預熱自動裝配器
- * @Author： Karami
+ * @author vevoly
  *
  * 启动时扫描所有带 @CachePreloadable 注解的 Bean，
  * 自动调用 {@link JMultiCachePreloadProcessor} 执行预热逻辑。

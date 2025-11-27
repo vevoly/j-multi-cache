@@ -95,15 +95,28 @@ public class JMultiCacheConfigResolver implements InitializingBean {
                 // 1. 处理可为空的字段 (TTL) - 允许为 null 以表示禁用
                 // =========================================================
 
-                // Redis TTL: Config -> Default -> NULL
+                // 逻辑：必须不是 0，且（如果是负数，必须是 -1）
+                java.util.function.Predicate<Duration> isEnabled = d -> {
+                    if (d.isZero()) return false; // 0 = 禁用
+                    if (d.isNegative()) {
+                        // 如果是负数，只有 -1 (毫秒或秒) 代表永不过期，允许通过
+                        // 其他负数视为无效/禁用
+                        // 兼容 -1 (默认为毫秒) 和 -1s (秒)
+                        return d.toMillis() == -1 || d.getSeconds() == -1;
+                    }
+                    return true; // 正数 = 正常时间
+                };
+                // Redis TTL
                 Duration finalRedisTtl = Optional.ofNullable(props.getRedisTtl())
                         .or(() -> Optional.ofNullable(defaults.getRedisTtl()))
-                        .orElse(null); // 允许为 null
+                        .filter(isEnabled)
+                        .orElse(null);     // 如果被过滤掉（是0或无效负数），结果为 null
 
-                // Local TTL: Config -> Default -> NULL
+                // Local TTL
                 Duration finalLocalTtl = Optional.ofNullable(props.getLocalTtl())
                         .or(() -> Optional.ofNullable(defaults.getLocalTtl()))
-                        .orElse(null); // 允许为 null
+                        .filter(isEnabled)
+                        .orElse(null);     // 如果被过滤掉，结果为 null
 
                 // =========================================================
                 // 2. 处理必填字段 - 必须兜底到常量
@@ -231,7 +244,7 @@ public class JMultiCacheConfigResolver implements InitializingBean {
             return null;
         }
         for (ResolvedJMultiCacheConfig config : configsSortedByNamespaceDesc) {
-            if (fullKey.startsWith(config.getNamespace() + ":")) {
+            if (fullKey.startsWith(config.getNamespace())) {
                 return config;
             }
         }

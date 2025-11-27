@@ -3,18 +3,17 @@ package io.github.vevoly.jmulticache.starter.autoconfigure;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import io.github.vevoly.jmulticache.api.redis.RedisClient;
-import io.github.vevoly.jmulticache.core.internal.JMultiCacheableAspect;
 import io.github.vevoly.jmulticache.core.config.JMultiCacheConfigResolver;
 import io.github.vevoly.jmulticache.core.internal.JMultiCacheManagerConfiguration;
+import io.github.vevoly.jmulticache.core.internal.JMultiCacheableAspect;
 import io.github.vevoly.jmulticache.core.processor.JMultiCachePreloadProcessor;
 import io.github.vevoly.jmulticache.core.properties.JMultiCacheRootProperties;
 import io.github.vevoly.jmulticache.core.redis.RedissonRedisClient;
-import io.github.vevoly.jmulticache.core.strategy.impl.*;
 import lombok.extern.slf4j.Slf4j;
 import org.redisson.api.RedissonClient;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
-import org.springframework.boot.autoconfigure.AutoConfigureAfter;
+import org.springframework.boot.autoconfigure.AutoConfigureBefore;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -49,18 +48,16 @@ import java.util.concurrent.ThreadPoolExecutor;
 @AutoConfiguration
 @ConditionalOnClass({RedissonClient.class, Caffeine.class})
 @EnableConfigurationProperties(JMultiCacheRootProperties.class)
-@AutoConfigureAfter(org.redisson.spring.starter.RedissonAutoConfiguration.class)
+@AutoConfigureBefore(org.redisson.spring.starter.RedissonAutoConfiguration.class)
 @ConditionalOnProperty(prefix = "j-multi-cache", name = "enabled", havingValue = "true", matchIfMissing = true)
 @Import({
-        StringStorageStrategy.class,
-        ListStorageStrategy.class,
-        SetStorageStrategy.class,
-        HashStorageStrategy.class,
-        PageStorageStrategy.class,
         JMultiCacheableAspect.class,
         JMultiCachePreloadProcessor.class,
         JMultiCacheManagerConfiguration.class,
+        JMultiCacheStrategyConfiguration.class,
         JMultiCacheCaffeineConfiguration.class,
+        JMultiCacheRedissonConfiguration.class,
+
 })
 public class JMultiCacheAutoConfiguration {
 
@@ -111,7 +108,7 @@ public class JMultiCacheAutoConfiguration {
      */
     @Bean
     @ConditionalOnMissingBean(RedisClient.class)
-    public RedisClient redisClient(RedissonClient redissonClient) {
+    public RedisClient redisClient(@Qualifier("jMultiCacheRedissonClient") RedissonClient redissonClient) {
         return new RedissonRedisClient(redissonClient);
     }
 }

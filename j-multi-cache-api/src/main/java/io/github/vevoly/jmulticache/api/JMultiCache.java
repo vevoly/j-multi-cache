@@ -120,20 +120,21 @@ public interface JMultiCache {
      * Fetches the union of multiple Redis Sets.
      * If the L2 cache is not fully hit, it queries the database and computes the union.
      *
-     * @param unionCacheKey   用于存储并集结果的 L1 缓存 Key。/ The L1 cache key for storing the union result.
      * @param setKeysInRedis  参与并集计算的 Redis Key 列表。/ List of Redis keys participating in the union calculation.
      * @param dbQueryFunction 数据库回源函数，输入为缺失的 Key 列表，输出为 Key 到 Set 的映射。/ Database fallback function, input is a list of missing keys, output is a map of Key to Set.
      * @param <T>             Set 中元素的类型。/ The type of elements in the Set.
      * @return 计算后的并集。/ The computed union set.
      */
-    <T> Set<T> fetchUnionData(String unionCacheKey, List<String> setKeysInRedis, Function<List<String>, Map<String, Set<T>>> dbQueryFunction);
+    <T> Set<T> fetchUnionData(List<String> setKeysInRedis, Function<List<String>, Map<String, Set<T>>> dbQueryFunction);
 
     /**
      * 获取 Hash 结构中的单个字段。
-     * 建议使用其他更通用的存储策略替代。
+     * 由于Hash不能单独设置item的缓存过期时间，所以无法进行空缓存回种。
+     * 有缓存击穿的风险，建议使用其他更通用的存储策略替代。
      * <p>
      * Fetches a single field from a Hash structure.
-     * It is recommended to use other more general storage strategies instead.
+     * Due to the inability to set the cache expiration time for individual items in a Hash, it is not possible to perform a empty cache planting back.
+     * so, there is a risk of Cache Penetration. It is recommended to use other more general storage strategies instead.
      *
      * @param hashKey       Hash 的 Key。/ The Hash key.
      * @param field         字段名。/ The field name.

@@ -1,6 +1,7 @@
 package io.github.vevoly.jmulticache.core.strategy.impl;
 
 import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.github.vevoly.jmulticache.api.config.ResolvedJMultiCacheConfig;
 import io.github.vevoly.jmulticache.api.constants.DefaultStorageTypes;
@@ -111,12 +112,22 @@ public class SetStorageStrategy implements RedisStorageStrategy<Set<?>> {
         dataToCache.forEach((key, valueSet) -> {
             if (valueSet != null && !valueSet.isEmpty()) {
                 batch.setDeleteAsync(key);
-                // 将传入的 Set<?> 的每个成员转换为 String / convert each member of the Set<?> to String
-                Set<String> stringMembers = valueSet.stream()
-                        .map(String::valueOf)
+                // 使用 ObjectMapper 将对象序列化为 JSON 字符串
+                Set<String> jsonMembers = valueSet.stream()
+                        .map(member -> {
+                            try {
+                                return objectMapper.writeValueAsString(member);
+                            } catch (Exception e) {
+                                log.error("[JMultiCache-Strategy] Failed to serialize member to JSON: {}", member, e);
+                                return null;
+                            }
+                        })
+                        .filter(Objects::nonNull)
                         .collect(Collectors.toSet());
-                batch.setAddAllAsync(key, stringMembers);
-                batch.expireAsync(key, ttl);
+                if (!jsonMembers.isEmpty()) {
+                    batch.setAddAllAsync(key, jsonMembers);
+                    batch.expireAsync(key, ttl);
+                }
             }
         });
     }
@@ -189,15 +200,24 @@ public class SetStorageStrategy implements RedisStorageStrategy<Set<?>> {
      * @return 转换后的、类型安全的 Set<?>。/ The converted, type-safe Set<?>.
      */
     private <E>Set<E> convertRawSetToTypedSet(Set<String> rawSet, TypeReference<Set<E>> typeRef, ResolvedJMultiCacheConfig config) {
-        final Set<String> cleanSet = getCleanSet(rawSet, config);
+        // 1. 清理数据（处理空值占位符）
+        Set<String> cleanSet = this.getCleanSet(rawSet, config);
         if (CollectionUtils.isEmpty(cleanSet)) {
             return Collections.emptySet();
         }
-        try {
-            return objectMapper.convertValue(cleanSet, typeRef);
-        } catch (Exception e) {
-            log.error("[JMultiCache-Strategy] Generic type conversion failed for clean Set. Clean Set: {}", cleanSet, e);
-            return Collections.emptySet();
+        // 2. 核心修复：从 TypeReference 中提取泛型 E 的具体类型
+        JavaType collectionType = objectMapper.getTypeFactory().constructType(typeRef.getType());
+        // 3. 准备结果集合
+        Set<E> result = new HashSet<>(cleanSet.size());
+        // 4. 逐个反序列化 (Parse each JSON string)
+        for (String jsonString : cleanSet) {
+            try {
+                E element = objectMapper.readValue(jsonString, collectionType);
+                result.add(element);
+            } catch (Exception e) {
+                log.error("[JMultiCache-Strategy] Failed to deserialize element in Set. JSON: {}", jsonString, e);
+            }
         }
+        return result;
     }
 }

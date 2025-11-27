@@ -110,8 +110,8 @@ class JMultiCacheImpl implements JMultiCache, JMultiCacheAdmin {
     }
 
     @Override
-    public <T> Set<T> fetchUnionData(String unionCacheKey, List<String> setKeysInRedis, Function<List<String>, Map<String, Set<T>>> dbQueryFunction) {
-        return fetchUnionDataUnified(unionCacheKey, setKeysInRedis, dbQueryFunction);
+    public <T> Set<T> fetchUnionData(List<String> setKeysInRedis, Function<List<String>, Map<String, Set<T>>> dbQueryFunction) {
+        return fetchUnionDataUnified(setKeysInRedis, dbQueryFunction);
     }
 
     @Override
@@ -186,11 +186,11 @@ class JMultiCacheImpl implements JMultiCache, JMultiCacheAdmin {
      * @param <T>
      */
     private <T> RedisStorageStrategy<T> getStrategy(String storageType) {
-        return (RedisStorageStrategy<T>) strategyMap.get(storageType);
+        return (RedisStorageStrategy<T>) strategyMap.get(storageType.toUpperCase());
     }
 
     private <T> FieldBasedStorageStrategy<T> getFieldBasedStrategy(String storageType) {
-        RedisStorageStrategy<?> strategy = strategyMap.get(storageType);
+        RedisStorageStrategy<?> strategy = strategyMap.get(storageType.toUpperCase());
         if (!(strategy instanceof FieldBasedStorageStrategy)) {
             throw new UnsupportedOperationException(LOG_PREFIX + "存储类型 " + storageType + " 不支持按字段操作！");
         }
@@ -238,14 +238,14 @@ class JMultiCacheImpl implements JMultiCache, JMultiCacheAdmin {
         }
         // 4. L2 Redis 尝试
         if (actualConfig.isUseL2()) {
-            TypeReference<T> typeRef = (TypeReference<T>) config.getTypeReference();
+            TypeReference<T> typeRef = (TypeReference<T>) actualConfig.getTypeReference();
             Optional<T> l2Result = getFromRedis(fullKey, actualConfig, typeRef);
             if (l2Result.isPresent()) {
                 T value = l2Result.get();
-                if (config.isPopulateL1FromL2()) {
+                if (actualConfig.isPopulateL1FromL2()) {
                     putInLocalCacheAsync(actualConfig, fullKey, value);
                 }
-                return JMultiCacheInternalHelper.handleCacheHit(value, config);
+                return JMultiCacheInternalHelper.handleCacheHit(value, actualConfig);
             }
         }
         // 5. DB 查询并回填
@@ -405,54 +405,71 @@ class JMultiCacheImpl implements JMultiCache, JMultiCacheAdmin {
      */
     @SuppressWarnings("unchecked")
     private <T> Set<T> fetchUnionDataUnified(
-            String unionCacheKey,
             List<String> setKeysInRedis,
             Function<List<String>, Map<String, Set<T>>> dbQueryFunction
     ) {
+        if (CollectionUtils.isEmpty(setKeysInRedis)) {
+            return Collections.emptySet();
+        }
+
         // 1. 解析配置 (Config)
-        ResolvedJMultiCacheConfig config = configResolver.resolveFromFullKey(unionCacheKey);
+        String primaryKey = setKeysInRedis.get(0);
+        ResolvedJMultiCacheConfig config = configResolver.resolveFromFullKey(primaryKey);
         if (config == null) {
             // 如果无法解析配置，这通常是致命错误，因为我们不知道 TTL 等信息
-            throw new IllegalStateException("Could not resolve config for unionCacheKey: " + unionCacheKey);
+            throw new IllegalStateException("Could not resolve config: " + primaryKey);
         }
         // 获取 Set 策略
         RedisStorageStrategy<Set<T>> strategy = getStrategy(DefaultStorageTypes.SET);
         TypeReference<Set<T>> typeRef = (TypeReference<Set<T>>) config.getTypeReference();
 
+        Set<T> finalResult = new HashSet<>();
+        List<String> missingKeysAfterL1 = new ArrayList<>(); ;
+
         // 1. 查询 L1
         if (config.isUseL1()) {
-            Set<T> l1Result = getFromLocalCache(config.getNamespace(), unionCacheKey);
-            if (l1Result != null) {
-                return (Set<T>) JMultiCacheInternalHelper.handleCacheHit(l1Result, config);
+            for (String key : setKeysInRedis) {
+                // 尝试从 L1 获取单个 Set
+                Set<T> l1Set = getFromLocalCache(config.getNamespace(), key);
+                if (l1Set != null) {
+                    // L1 命中：处理空值占位符，然后加入最终结果
+                    if (!JMultiCacheHelper.isSpecialEmptyData(l1Set, config)) {
+                        finalResult.addAll(l1Set);
+                    }
+                    // 如果是空值占位符，什么都不做，但也算命中了（不需要查L2）
+                } else {
+                    // L1 未命中
+                    missingKeysAfterL1.add(key);
+                }
             }
+        } else {
+            missingKeysAfterL1 = setKeysInRedis; // 没开 L1，全给 L2
+        }
+
+        // 如果 L1 全部命中，直接返回计算结果！
+        if (missingKeysAfterL1.isEmpty()) {
+            return finalResult;
         }
 
         // 2. 查询 L2 (Redis)
-        Set<T> finalResult = new HashSet<>();
-        List<String> missingKeysAfterL2 = setKeysInRedis;
+        List<String> missingKeysAfterL2 = missingKeysAfterL1;
         if (config.isUseL2()) {
             try {
                 // 调用接口的 readUnion，它会返回并集结果和未命中的 key
                 UnionReadResult<T> l2ReadResult = strategy.readUnion(redisClient, setKeysInRedis, typeRef, config);
-                finalResult.addAll(l2ReadResult.getUnionResult());
+                if (l2ReadResult.getUnionResult() != null && !l2ReadResult.getUnionResult().isEmpty()) {
+                    finalResult.addAll(l2ReadResult.getUnionResult());
+                }
                 missingKeysAfterL2 = l2ReadResult.getMissedKeys();
-
                 if (missingKeysAfterL2.isEmpty()) {
-                    // L2 全部命中，直接返回并尝试回填 L1
-                    if (config.isPopulateL1FromL2() && !finalResult.isEmpty()) {
-                        putInLocalCacheAsync(config, unionCacheKey, finalResult);
-                    }
-                    return finalResult;
+                    return finalResult; // 不再回填L1
                 }
                 i18nLog.info("l2.union_partial_hit", l2ReadResult.getUnionResult().size(), missingKeysAfterL2.size());
-
             } catch (Exception e) {
                 i18nLog.error("l2.union_error", e, setKeysInRedis, e.getMessage());
-                // L2 异常，降级：认为所有 key 都未命中，去查 DB
-                missingKeysAfterL2 = setKeysInRedis;
+                missingKeysAfterL2 = missingKeysAfterL1; // L2 异常，降级：认为所有 key 都未命中，去查 DB
             }
         }
-
         // 3. DB 查询 (处理 L2 未命中的部分)
         i18nLog.info("db.union_load", missingKeysAfterL2);
         Map<String, Set<T>> dbResultMap;
@@ -465,34 +482,38 @@ class JMultiCacheImpl implements JMultiCache, JMultiCacheAdmin {
             dbResultMap = Collections.emptyMap();
         }
         // 合并 DB 结果到最终结果
-        if (dbResultMap != null) {
+        if (dbResultMap != null && !dbResultMap.isEmpty()) {
             dbResultMap.values().forEach(finalResult::addAll);
         }
-        // 4. 回填 L2
-        if (config.isUseL2()) {
-            BatchOperation batch = redisClient.createBatchOperation();
+        // 4. 回填 L2 或 L1
+        if (config.isUseL2() || config.isUseL1()) {
+            try {
+                // 4.1 回填 L2 (Redis)
+                if (config.isUseL2()) {
+                    BatchOperation batch = redisClient.createBatchOperation();
+                    if (MapUtils.isNotEmpty(dbResultMap)) {
+                        strategy.writeMulti(batch, dbResultMap, config);
+                    }
+                    // 处理空值
+                    Set<String> foundDbKeys = (dbResultMap != null) ? dbResultMap.keySet() : Collections.emptySet();
+                    List<String> keysToMarkEmpty = missingKeysAfterL2.stream()
+                            .filter(key -> !foundDbKeys.contains(key))
+                            .collect(Collectors.toList());
+                    if (!keysToMarkEmpty.isEmpty()) {
+                        strategy.writeMultiEmpty(batch, keysToMarkEmpty, config);
+                    }
+                    batch.execute();
+                }
 
-            // 回填真实数据
-            if (MapUtils.isNotEmpty(dbResultMap)) {
-                strategy.writeMulti(batch, dbResultMap, config);
+                // 4.2 回填 L1 (本地)
+                // 把从 DB 查到的每一个单独的 Set，分别塞回 L1
+                if (config.isUseL1() && MapUtils.isNotEmpty(dbResultMap)) {
+                    Map<String, Object> l1PopulateMap = new HashMap<>(dbResultMap);
+                    putInLocalCacheMultiAsync(config, l1PopulateMap);
+                }
+            } catch (Exception e) {
+                log.error("[JMultiCache] Populate cache failed.", e);
             }
-
-            // 找出那些在DB中没有数据，但参与了查询的Key，为它们写入空标记
-            Set<String> foundDbKeys = (dbResultMap != null) ? dbResultMap.keySet() : Collections.emptySet();
-            List<String> keysToMarkEmpty = missingKeysAfterL2.stream()
-                    .filter(key -> !foundDbKeys.contains(key))
-                    .collect(Collectors.toList());
-
-            if (!keysToMarkEmpty.isEmpty()) {
-                strategy.writeMultiEmpty(batch, keysToMarkEmpty, config);
-            }
-            batch.execute();
-            i18nLog.info("l2.union_populate_success",
-                    (dbResultMap != null ? dbResultMap.size() : 0), keysToMarkEmpty.size());
-        }
-        // 5. 回填 L1 (并集结果)
-        if (config.isUseL1() && !finalResult.isEmpty()) {
-            putInLocalCacheAsync(config, unionCacheKey, finalResult);
         }
         return finalResult;
     }
