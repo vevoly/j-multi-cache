@@ -1,5 +1,8 @@
 package io.github.vevoly.jmulticache.api.annotation;
 
+import io.github.vevoly.jmulticache.api.config.JMultiCacheImportsSelector;
+import org.springframework.context.annotation.Import;
+
 import java.lang.annotation.*;
 
 /**
@@ -14,6 +17,7 @@ import java.lang.annotation.*;
 @Documented
 @Target(ElementType.TYPE)
 @Retention(RetentionPolicy.RUNTIME)
+@Import(JMultiCacheImportsSelector.class)
 public @interface EnableJMultiCache {
 
     /**

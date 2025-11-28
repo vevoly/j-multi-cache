@@ -2,9 +2,9 @@ package io.github.vevoly.jmulticache.core.processor;
 
 import io.github.vevoly.jmulticache.api.JMultiCacheAdmin;
 import io.github.vevoly.jmulticache.api.annotation.JMultiCachePreloadable;
+import io.github.vevoly.jmulticache.api.config.ResolvedJMultiCacheConfig;
 import io.github.vevoly.jmulticache.api.constants.JMultiCacheConstants;
 import io.github.vevoly.jmulticache.core.config.JMultiCacheConfigResolver;
-import io.github.vevoly.jmulticache.api.config.ResolvedJMultiCacheConfig;
 import io.github.vevoly.jmulticache.core.utils.JMultiCacheInternalHelper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

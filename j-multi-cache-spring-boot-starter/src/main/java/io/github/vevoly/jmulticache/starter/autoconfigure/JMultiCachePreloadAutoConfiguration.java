@@ -2,6 +2,7 @@ package io.github.vevoly.jmulticache.starter.autoconfigure;
 
 import io.github.vevoly.jmulticache.api.JMultiCachePreload;
 import io.github.vevoly.jmulticache.api.annotation.JMultiCachePreloadable;
+import io.github.vevoly.jmulticache.core.config.JMultiCacheMarkerConfiguration;
 import io.github.vevoly.jmulticache.core.processor.JMultiCachePreloadProcessor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.aop.support.AopUtils;
@@ -30,6 +31,7 @@ public class JMultiCachePreloadAutoConfiguration implements CommandLineRunner {
     private final ApplicationContext applicationContext;
     private final List<JMultiCachePreload> preloadServices;
     private final JMultiCachePreloadProcessor cachePreloadProcessor;
+    private final JMultiCacheMarkerConfiguration markerConfiguration;
 
     private static final boolean ASYNC = true;
     private static final boolean FAIL_FAST = false;
@@ -39,26 +41,33 @@ public class JMultiCachePreloadAutoConfiguration implements CommandLineRunner {
             List<JMultiCachePreload> preloadServices,
             @Qualifier("jMultiCacheAsyncExecutor") Executor asyncExecutor,
             ApplicationContext applicationContext,
-            JMultiCachePreloadProcessor cachePreloadProcessor
+            JMultiCachePreloadProcessor cachePreloadProcessor,
+            JMultiCacheMarkerConfiguration markerConfiguration
     ) {
-        this.preloadServices = preloadServices;
         this.asyncExecutor = asyncExecutor;
+        this.preloadServices = preloadServices;
         this.applicationContext = applicationContext;
+        this.markerConfiguration = markerConfiguration;
         this.cachePreloadProcessor = cachePreloadProcessor;
     }
 
     @Override
     public void run(String... args) {
 
+        // 缓存预热开关检查
+        if (markerConfiguration == null || !markerConfiguration.isPreload()) {
+            log.info(LOG_PREFIX + "缓存预热功能已禁用 (EnableJMultiCache.preload=false)，跳过执行。");
+            return;
+        }
         log.info(LOG_PREFIX + " ====== 开始执行应用启动缓存预热 ====== (async = {}, failFast = {})", ASYNC, FAIL_FAST);
 
         StopWatch stopWatch = new StopWatch("Total Cache Preload");
         stopWatch.start();
 
-        // 1 执行注解模式的预热
+        // 执行注解模式的预热
         List<Runnable> annotationTasks = buildAnnotationPreloadTasks();
 
-        // 2 执行接口模式的预热
+        // 执行接口模式的预热
         List<Runnable> interfaceTasks = buildInterfacePreloadTasks();
 
         // 合并任务

@@ -1,7 +1,6 @@
 package io.github.vevoly.jmulticache.core.internal;
 
 import io.github.vevoly.jmulticache.api.JMultiCache;
-import io.github.vevoly.jmulticache.api.JMultiCacheAdmin;
 import io.github.vevoly.jmulticache.api.redis.RedisClient;
 import io.github.vevoly.jmulticache.api.strategy.RedisStorageStrategy;
 import io.github.vevoly.jmulticache.core.config.JMultiCacheConfigResolver;
@@ -13,6 +12,10 @@ import org.springframework.context.annotation.Configuration;
 import java.util.List;
 import java.util.concurrent.Executor;
 
+/**
+ * JMultiCacheManager 配置类。
+ * @author vevoly
+ */
 @Configuration
 public class JMultiCacheManagerConfiguration {
 

@@ -106,7 +106,7 @@ public interface JMultiCacheConstants {
     String DEFAULT_FETCH_METHOD_NAME = "list";
 
     // ===================================================================
-    // ===================== 特定方法契约常量 / Method Contract Constants =====================
+    // ===================== 特定方法契约常量 / Method Contract Constants ===
     // ===================================================================
 
     /**
@@ -123,4 +123,28 @@ public interface JMultiCacheConstants {
      */
     String UNION_MISSED_KEYS = "missedKeys";
 
+    // ====================================================================
+    // ==================== 配置属性常量 / Configuration Property Constants =
+    // ====================================================================
+
+    /**
+     * 用于标记是否预加载缓存的属性名。
+     * <p>
+     * The name of the attribute used to mark whether to preload the cache.
+     */
+    String PRELOAD_ATTRIBUTE_NAME = "preload";
+
+    /**
+     * Core 模块中 JMultiCacheEnableRegistrar 的全限定类名
+     * <p>
+     * Core module's fully qualified class name for JMultiCacheEnableRegistrar
+     */
+    String REGISTRAR_CLASS_NAME = "io.github.vevoly.jmulticache.core.config.JMultiCacheEnableRegistrar";
+
+    /**
+     * JMultiCacheMarkerConfiguration 的全限定名
+     * <p>
+     * JMultiCacheMarkerConfiguration's fully qualified class name
+     */
+    String MARKER_CONFIG_CLASS_NAME = "io.github.vevoly.jmulticache.core.config.JMultiCacheMarkerConfiguration";
 }
