@@ -620,24 +620,43 @@ class JMultiCacheImpl implements JMultiCache, JMultiCacheAdmin {
 
         // 获取多级缓存配置
         ResolvedJMultiCacheConfig config = configResolver.resolve(multiCacheName);
+        // 构建归一化后的数据 Map (Normalized Data Map)
+        // 确保后续写入 L1 和 L2 的 Key 都是完整的 Full Key (Namespace:ID)
+        Map<String, V> finalDataMap = new HashMap<>(dataToCache.size());
+        String namespace = config.getNamespace();
+        String prefixToCheck = namespace + ":";
+        for (Map.Entry<String, V> entry : dataToCache.entrySet()) {
+            String rawKey = entry.getKey();
+            V value = entry.getValue();
+
+            String fullKey;
+            // 判断逻辑：如果 key 已经包含了 namespace 前缀，则认为是完整 key；否则，认为是 ID，进行拼接
+            if (rawKey.startsWith(prefixToCheck)) {
+                fullKey = rawKey;
+            } else {
+                fullKey = prefixToCheck + rawKey;
+            }
+            finalDataMap.put(fullKey, value);
+        }
+
         log.info(LOG_PREFIX + "[WARM-UP-MAP] 开始为 '{}' 执行缓存预热，策略: {}，数量: {}",
-                config.getNamespace(), config.getStoragePolicy(), dataToCache.size());
+                config.getNamespace(), config.getStoragePolicy(), finalDataMap.size());
         try {
             // 1. 根据策略回填 L2 Redis
             if (config.isUseL2()) {
                 RedisStorageStrategy<V> strategy = getStrategy(config.getStorageType());
                 BatchOperation batchOperation = redisClient.createBatchOperation();
-                strategy.writeMulti(batchOperation, dataToCache, config);
+                strategy.writeMulti(batchOperation, finalDataMap, config);
                 batchOperation.execute();
             }
             // 2. 根据策略回填 L1 Caffeine
             if (config.isUseL1()) {
-                putInLocalCacheMultiAsync(config, new HashMap<>(dataToCache));
+                putInLocalCacheMultiAsync(config, new HashMap<>(finalDataMap));
             }
 
             log.info(LOG_PREFIX + "[WARM-UP-MAP] 缓存预热成功。Namespace: {}, 数量: {}",
-                    config.getNamespace(), dataToCache.size());
-            return dataToCache.size();
+                    config.getNamespace(), finalDataMap.size());
+            return finalDataMap.size();
         } catch (Exception e) {
             log.error(LOG_PREFIX + "[WARM-UP-MAP] 缓存预热失败。Namespace: {}", config.getNamespace(), e);
             return -1; // 返回-1表示失败 / return -1 to indicate failure

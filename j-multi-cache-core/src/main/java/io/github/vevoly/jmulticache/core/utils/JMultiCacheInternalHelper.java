@@ -20,7 +20,6 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import org.springframework.expression.spel.support.StandardEvaluationContext;
 import org.springframework.util.StringUtils;
 import org.apache.commons.collections4.CollectionUtils;
-import com.google.common.base.CaseFormat;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
@@ -715,19 +714,19 @@ public class JMultiCacheInternalHelper {
     /**
      * 将驼峰命名法 (upperCamel) 字符串转换为大写下划线命名法 (UPPER_UNDERSCORE)。
      * <p>
-     * 例如: "TenantAppVersion" -> "TENANT_APP_VERSION"
-     * <p>
      * Converts an upperCamel case string to UPPER_UNDERSCORE case.
-     * For example: "TenantAppVersion" -> "TENANT_APP_VERSION"
      *
      * @param name 驼峰命名的字符串。/ The upperCamel case string.
      * @return 转换后的字符串。/ The converted string.
      */
     static String camelToUpperUnderscore(String name) {
-        if (!StringUtils.hasText(name)) {
+        if (name == null || name.isEmpty()) {
             return "";
         }
-        // 使用 Guava 的实现更健壮 / Using Guava's implementation is more robust.
-        return CaseFormat.UPPER_CAMEL.to(CaseFormat.UPPER_UNDERSCORE, name);
+        String regex = "([a-z])([A-Z]+)";
+        String replacement = "$1_$2";
+        String snakeCase = name.replaceAll(regex, replacement);
+
+        return snakeCase.toUpperCase();
     }
 }

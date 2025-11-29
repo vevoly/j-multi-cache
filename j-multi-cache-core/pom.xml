@@ -87,14 +87,6 @@
             <version>${commons-lang3.version}</version>
         </dependency>
 
-        <!-- Utility: Google Guava -->
-        <dependency>
-            <groupId>com.google.guava</groupId>
-            <artifactId>guava</artifactId>
-            <version>31.1-jre</version>
-            <optional>true</optional> <!-- 设为 optional，因为它是实现细节 -->
-        </dependency>
-
         <!-- Utility: mybatis plus extension -->
         <dependency>
             <groupId>org.springframework.data</groupId>
