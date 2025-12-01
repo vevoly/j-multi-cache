@@ -1,6 +1,6 @@
 package io.github.vevoly.jmulticache.core.processor;
 
-import io.github.vevoly.jmulticache.api.JMultiCacheAdmin;
+import io.github.vevoly.jmulticache.api.JMultiCacheOps;
 import io.github.vevoly.jmulticache.api.annotation.JMultiCachePreloadable;
 import io.github.vevoly.jmulticache.api.config.ResolvedJMultiCacheConfig;
 import io.github.vevoly.jmulticache.api.constants.JMultiCacheConstants;
@@ -35,7 +35,7 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class JMultiCachePreloadProcessor {
 
-    private final JMultiCacheAdmin jMultiCacheAdmin;
+    private final JMultiCacheOps jMultiCacheAdmin;
     private final JMultiCacheConfigResolver multiCacheConfigResolver;
 
     private static final String LOG_PREFIX = "[JMultiCache-Preload] ";

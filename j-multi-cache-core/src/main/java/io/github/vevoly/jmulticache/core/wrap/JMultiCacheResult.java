@@ -75,7 +75,7 @@ public class JMultiCacheResult<K, V> {
         }
 
         // 使用字符串常量进行比较
-        if (config != null && DefaultStorageTypes.LIST.equals(config.getStorageType())) {
+        if (config != null && DefaultStorageTypes.LIST.equalsIgnoreCase(config.getStorageType())) {
             // 如果存储类型是 LIST，值的类型是 Collection<V>，需要使用 flatMap 打平
             this.flatList = this.groupedMap.values().stream()
                     .filter(Objects::nonNull)

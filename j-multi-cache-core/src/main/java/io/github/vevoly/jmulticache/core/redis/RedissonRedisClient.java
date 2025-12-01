@@ -1,5 +1,7 @@
 package io.github.vevoly.jmulticache.core.redis;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.github.vevoly.jmulticache.api.constants.JMultiCacheConstants;
 import io.github.vevoly.jmulticache.api.redis.RedisClient;
 import io.github.vevoly.jmulticache.api.redis.batch.BatchOperation;
@@ -25,6 +27,7 @@ import java.util.concurrent.TimeUnit;
 public class RedissonRedisClient implements RedisClient {
 
     private final RedissonClient redisson;
+    private final ObjectMapper objectMapper;
 
     @Override
     public boolean exists(String key) {
@@ -258,7 +261,15 @@ public class RedissonRedisClient implements RedisClient {
 
     @Override
     public void publish(String channel, Object message) {
-        redisson.getTopic(channel).publish(message);
+        String jsonMsg = null;
+        try {
+            jsonMsg = objectMapper.writeValueAsString(message);
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException(e);
+        }
+        redisson.getTopic(channel, org.redisson.client.codec.StringCodec.INSTANCE)
+                .publish(jsonMsg);
+//        redisson.getTopic(channel).publish(message);
     }
 
     @Override

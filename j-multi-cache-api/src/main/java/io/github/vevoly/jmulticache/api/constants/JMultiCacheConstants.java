@@ -36,7 +36,7 @@ public interface JMultiCacheConstants {
      * <p>
      * The name of the Redis Pub/Sub channel used for broadcasting L1 (Caffeine) cache invalidation messages.
      */
-    String CACHE_INVALIDATION_TOPIC = "j_multi_cache:invalidation_topic";
+    String J_MULTI_CACHE_EVICT_TOPIC = "j_multi_cache:topic:evict";
 
     // ===================================================================
     // ====================== 全局默认配置值 / Global Default Values ======================

@@ -1,7 +1,7 @@
 package io.github.vevoly.jmulticache.core.internal;
 
 import io.github.vevoly.jmulticache.api.JMultiCache;
-import io.github.vevoly.jmulticache.api.JMultiCacheAdmin;
+import io.github.vevoly.jmulticache.api.JMultiCacheOps;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.Collection;
@@ -18,7 +18,7 @@ import java.util.function.Supplier;
  * @author vevoly
  */
 @Slf4j
-public class NoOpJMultiCacheManager implements JMultiCache, JMultiCacheAdmin {
+public class NoOpJMultiCacheManager implements JMultiCache, JMultiCacheOps {
 
     private static final String LOG_PREFIX = "[JMultiCache-NoOp] ";
 
@@ -82,6 +82,26 @@ public class NoOpJMultiCacheManager implements JMultiCache, JMultiCacheAdmin {
     @Override
     public void evictL1(String multiCacheName, Object... keyParams) {
 
+    }
+
+    @Override
+    public void clear(String multiCacheName) {
+
+    }
+
+    @Override
+    public Set<String> keys(String multiCacheName) {
+        return null;
+    }
+
+    @Override
+    public void generateEnumClass(String packageName, String className, String targetDir) {
+
+    }
+
+    @Override
+    public String getL1Stats(String multiCacheName) {
+        return null;
     }
 
 }

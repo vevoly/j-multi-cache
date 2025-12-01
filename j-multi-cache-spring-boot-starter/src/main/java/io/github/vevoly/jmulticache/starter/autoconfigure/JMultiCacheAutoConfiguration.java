@@ -3,6 +3,7 @@ package io.github.vevoly.jmulticache.starter.autoconfigure;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import io.github.vevoly.jmulticache.api.JMultiCache;
+import io.github.vevoly.jmulticache.api.JMultiCacheOps;
 import io.github.vevoly.jmulticache.api.redis.RedisClient;
 import io.github.vevoly.jmulticache.core.config.JMultiCacheConfigResolver;
 import io.github.vevoly.jmulticache.core.internal.JMultiCacheManagerConfiguration;
@@ -11,6 +12,7 @@ import io.github.vevoly.jmulticache.core.internal.NoOpJMultiCacheManager;
 import io.github.vevoly.jmulticache.core.processor.JMultiCachePreloadProcessor;
 import io.github.vevoly.jmulticache.core.properties.JMultiCacheRootProperties;
 import io.github.vevoly.jmulticache.core.redis.RedissonRedisClient;
+import io.github.vevoly.jmulticache.core.redis.listener.JMultiCacheMessageListener;
 import lombok.extern.slf4j.Slf4j;
 import org.redisson.api.RedissonClient;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -24,11 +26,15 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
+import org.springframework.data.redis.connection.RedisConnectionFactory;
+import org.springframework.data.redis.listener.ChannelTopic;
+import org.springframework.data.redis.listener.RedisMessageListenerContainer;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 
 import java.util.concurrent.Executor;
 import java.util.concurrent.ThreadPoolExecutor;
 
+import static io.github.vevoly.jmulticache.api.constants.JMultiCacheConstants.J_MULTI_CACHE_EVICT_TOPIC;
 import static io.github.vevoly.jmulticache.api.constants.JMultiCacheConstants.MARKER_CONFIG_CLASS_NAME;
 
 /**
@@ -123,8 +129,29 @@ public class JMultiCacheAutoConfiguration {
          */
         @Bean
         @ConditionalOnMissingBean(RedisClient.class)
-        public RedisClient redisClient(@Qualifier("jMultiCacheRedissonClient") RedissonClient redissonClient) {
-            return new RedissonRedisClient(redissonClient);
+        public RedisClient redisClient(@Qualifier("jMultiCacheRedissonClient") RedissonClient redissonClient,
+                                       @Qualifier("jMultiCacheObjectMapper") ObjectMapper objectMapper) {
+            return new RedissonRedisClient(redissonClient, objectMapper);
+        }
+
+        /**
+         * 5. 配置
+         * @param connectionFactory
+         * @param jMultiCacheOps
+         * @param objectMapper
+         * @return
+         */
+        @Bean
+        public RedisMessageListenerContainer jMultiCacheRedisContainer(
+                RedisConnectionFactory connectionFactory,
+                JMultiCacheOps jMultiCacheOps,
+                @Qualifier("jMultiCacheObjectMapper") ObjectMapper objectMapper) {
+            RedisMessageListenerContainer container = new RedisMessageListenerContainer();
+            container.setConnectionFactory(connectionFactory);
+            // 注册监听器
+            JMultiCacheMessageListener listener = new JMultiCacheMessageListener(objectMapper, jMultiCacheOps);
+            container.addMessageListener(listener, new ChannelTopic(J_MULTI_CACHE_EVICT_TOPIC));
+            return container;
         }
     }
 

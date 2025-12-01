@@ -1,11 +1,14 @@
 package io.github.vevoly.jmulticache.core.internal;
 
 import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.benmanes.caffeine.cache.Cache;
 import io.github.vevoly.jmulticache.api.JMultiCache;
-import io.github.vevoly.jmulticache.api.JMultiCacheAdmin;
+import io.github.vevoly.jmulticache.api.JMultiCacheOps;
 import io.github.vevoly.jmulticache.api.config.ResolvedJMultiCacheConfig;
 import io.github.vevoly.jmulticache.api.constants.DefaultStorageTypes;
+import io.github.vevoly.jmulticache.api.constants.JMultiCacheConstants;
+import io.github.vevoly.jmulticache.api.message.JMultiCacheEvictMessage;
 import io.github.vevoly.jmulticache.api.redis.RedisClient;
 import io.github.vevoly.jmulticache.api.redis.batch.BatchOperation;
 import io.github.vevoly.jmulticache.api.strategy.FieldBasedStorageStrategy;
@@ -35,25 +38,26 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 /**
- * {@link JMultiCache} 和 {@link JMultiCacheAdmin} 接口的核心实现类。
+ * {@link JMultiCache} 和 {@link JMultiCacheOps} 接口的核心实现类。
  * <p>
  * 此类编排了整个多级缓存的查询链路，包括 L1 (本地) 缓存、L2 (Redis) 缓存和最终的数据源加载。
  * 它通过动态注入所有 {@link RedisStorageStrategy} 实现，来支持不同数据结构的缓存。
  * <p>
- * The core implementation class for the {@link JMultiCache} and {@link JMultiCacheAdmin} interfaces.
+ * The core implementation class for the {@link JMultiCache} and {@link JMultiCacheOps} interfaces.
  * This class orchestrates the entire multi-level cache lookup chain, including L1 (local) cache, L2 (Redis) cache, and final data source loading.
  * It supports caching of different data structures by dynamically injecting all {@link RedisStorageStrategy} implementations.
  *
  * @author vevoly
  */
 @Slf4j
-class JMultiCacheImpl implements JMultiCache, JMultiCacheAdmin {
+class JMultiCacheImpl implements JMultiCache, JMultiCacheOps {
 
+    private final Executor asyncExecutor;
     private final RedisClient redisClient;
     private final CacheManager caffeineCacheManager;
     private final JMultiCacheConfigResolver configResolver;
-    private final Executor asyncExecutor;
     private final Map<String, RedisStorageStrategy<?>> strategyMap = new ConcurrentHashMap<>();
+
     private final I18nLogger i18nLog = new I18nLogger(log);
     public static final String LOG_PREFIX = "[JMultiCache] ";
 
@@ -126,12 +130,32 @@ class JMultiCacheImpl implements JMultiCache, JMultiCacheAdmin {
 
     @Override
     public void evict(String multiCacheName, Object... keyParams) {
-        evictUnified(multiCacheName, false, keyParams);
+        evictUnified(multiCacheName, false, true, keyParams);
     }
 
     @Override
     public void evictL1(String multiCacheName, Object... keyParams) {
-        evictUnified(multiCacheName, true, keyParams);
+        evictUnified(multiCacheName, true, false, keyParams);
+    }
+
+    @Override
+    public void clear(String multiCacheName) {
+
+    }
+
+    @Override
+    public Set<String> keys(String multiCacheName) {
+        return null;
+    }
+
+    @Override
+    public void generateEnumClass(String packageName, String className, String targetDir) {
+
+    }
+
+    @Override
+    public String getL1Stats(String multiCacheName) {
+        return null;
     }
 
     /**
@@ -669,20 +693,30 @@ class JMultiCacheImpl implements JMultiCache, JMultiCacheAdmin {
      * Evicts a cache item.
      *
      * @param multiCacheName 缓存配置的唯一名称。/ The unique name of the cache configuration.
-     * @param onlyL1         是否只清除 L1 本地缓存。/ Whether to only clear the L1 local cache.
+     * @param isOnlyL1         是否只清除 L1 本地缓存。/ Whether to only clear the L1 local cache.
      * @param keyParams      用于构建要清除的缓存键的动态参数。/ The dynamic parameters to build the final cache key to evict.
      *
      */
-    private void evictUnified(String multiCacheName, boolean onlyL1, Object... keyParams) {
+    private void evictUnified(String multiCacheName, boolean isOnlyL1, boolean isBroadcast, Object... keyParams) {
         // 1. 解析配置 / Resolve configuration
         ResolvedJMultiCacheConfig config = configResolver.resolve(multiCacheName);
         // 2. 构建完整的 Key / Build the full Key
-        String[] stringParams = Arrays.stream(keyParams)
-                .map(String::valueOf)
-                .toArray(String[]::new);
-        String fullKey = JMultiCacheHelper.buildKey(config.getNamespace(), stringParams);
+        String fullKey;
+        if (keyParams.length == 1 && keyParams[0] instanceof String
+                && ((String) keyParams[0]).startsWith(config.getNamespace())) {
+            // 🌟 智能判断：如果传入的参数已经是完整的 Key (包含 namespace 前缀)
+            // 这通常是 Listener 传过来的
+            fullKey = (String) keyParams[0];
+        } else {
+            // 常规情况：拼接 Key
+            String[] stringParams = Arrays.stream(keyParams)
+                    .map(String::valueOf)
+                    .toArray(String[]::new);
+            fullKey = JMultiCacheHelper.buildKey(config.getNamespace(), stringParams);
+        }
+
         // 3. 清除 L2 (Redis) / Evict L2 (Redis)
-        if (!onlyL1) {
+        if (!isOnlyL1) {
             if (config.isUseL2()) {
                 redisClient.delete(fullKey);
                 i18nLog.info("evict.l2_success", fullKey);
@@ -691,8 +725,17 @@ class JMultiCacheImpl implements JMultiCache, JMultiCacheAdmin {
         // 4. 清除 L1 (本地) / Evict L1 (Local)
         if (config.isUseL1()) {
             evictFromLocalCache(config.getNamespace(), fullKey);
-            // TODO: 发送广播消息通知其他节点清除 L1
-            // publishCacheInvalidationMessage(config.getNamespace(), fullKey);
+            // 5. 发送集群广播清除 L1 (本地)
+            if (isBroadcast) {
+                try {
+                    JMultiCacheEvictMessage message = new JMultiCacheEvictMessage(config.getName(), fullKey);
+                    redisClient.publish(JMultiCacheConstants.J_MULTI_CACHE_EVICT_TOPIC, message);
+                    log.info("evict.broadcast_sent", fullKey);
+                } catch (Exception e) {
+                    i18nLog.error("evict.broadcast_error", e, config.getName(), fullKey, e.getMessage());
+                }
+
+            }
         }
     }
 

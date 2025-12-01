@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.github.vevoly.jmulticache.api.config.ResolvedJMultiCacheConfig;
 import io.github.vevoly.jmulticache.api.constants.DefaultStorageTypes;
 import io.github.vevoly.jmulticache.api.constants.JMultiCacheConstants;
+import io.github.vevoly.jmulticache.api.message.JMultiCacheEvictMessage;
 import io.github.vevoly.jmulticache.api.utils.JMultiCacheHelper;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.codec.digest.DigestUtils;
@@ -581,7 +582,7 @@ public class JMultiCacheInternalHelper {
         Function<Object, String> keyExtractor = entity ->
                 config.getNamespace() + ":" + getKeyValueSafe(entity, keyExpr);
 
-        switch (config.getStorageType()) {
+        switch (config.getStorageType().toUpperCase()) {
             case DefaultStorageTypes.STRING:
                 return dataList.stream().collect(Collectors.toMap(
                         keyExtractor,
