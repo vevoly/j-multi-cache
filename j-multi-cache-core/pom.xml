@@ -7,12 +7,14 @@
     <parent>
         <groupId>io.github.vevoly</groupId>
         <artifactId>j-multi-cache-parent</artifactId>
-        <version>1.0.0-SNAPSHOT</version>
+        <version>1.0.0</version>
     </parent>
 
     <artifactId>j-multi-cache-core</artifactId>
+    <name>j-multi-cache-core</name>
     <packaging>jar</packaging>
-    <description>Core implementation of j-multi-cache</description>
+    <url>https://github.com/vevoly/j-multi-cache</url>
+    <description>Core implementation of j-multi-cache.</description>
 
     <dependencies>
         <!-- Self API Module -->

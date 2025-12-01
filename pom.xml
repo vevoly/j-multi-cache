@@ -6,12 +6,37 @@
 
     <groupId>io.github.vevoly</groupId>
     <artifactId>j-multi-cache-parent</artifactId>
-    <version>1.0.0-SNAPSHOT</version>
+    <version>1.0.0</version>
     <packaging>pom</packaging>
 
     <name>j-multi-cache</name>
-    <description>A powerful multi-level cache framework for Spring Boot</description>
+    <description>A lightweight, high-performance distributed multi-level cache framework based on Redis (L2) + Caffeine (L1).Designed for Spring Boot to solve caching challenges in high-concurrency scenarios. It offers annotation-based caching, anti-penetration strategies, auto-refresh, distributed consistency, and support for various complex data structures.</description>
     <url>https://github.com/vevoly/j-multi-cache</url>
+
+    <licenses>
+        <license>
+            <name>The Apache Software License, Version 2.0</name>
+            <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+        </license>
+    </licenses>
+
+    <developers>
+        <developer>
+            <id>vevoly</id>
+            <name>vevoly</name>
+            <email>vevolyang@gmail.com</email>
+            <roles>
+                <role>Project Manager</role>
+                <role>Architect</role>
+            </roles>
+        </developer>
+    </developers>
+
+    <scm>
+        <connection>https://github.com/vevoly/j-multi-cache.git</connection>
+        <developerConnection>scm:git:ssh://git@github.com:vevoly/j-multi-cache.git</developerConnection>
+        <url>https://github.com/vevoly/j-multi-cache</url>
+    </scm>
 
     <properties>
         <java.version>17</java.version>
@@ -113,6 +138,7 @@
 
     <build>
         <plugins>
+            <!-- 1. 编译插件 -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
@@ -130,6 +156,77 @@
                     </annotationProcessorPaths>
                 </configuration>
             </plugin>
+
+            <!-- 2. 源码打包插件 (必须) -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-source-plugin</artifactId>
+                <version>3.3.1</version>
+                <executions>
+                    <execution>
+                        <id>attach-sources</id>
+                        <goals>
+                            <goal>jar-no-fork</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <!-- 3. Javadoc 打包插件 (必须) -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-javadoc-plugin</artifactId>
+                <version>3.6.3</version>
+                <executions>
+                    <execution>
+                        <id>attach-javadocs</id>
+                        <goals>
+                            <goal>jar</goal>
+                        </goals>
+                    </execution>
+                </executions>
+                <configuration>
+                    <!-- 关闭 DocLint 检查，允许不规范的 HTML -->
+                    <doclint>none</doclint>
+                    <!-- 即使有错误也不要中断构建 -->
+                    <failOnError>false</failOnError>
+                    <!-- 设置编码，防止中文乱码 -->
+                    <charset>UTF-8</charset>
+                    <encoding>UTF-8</encoding>
+                    <docencoding>UTF-8</docencoding>
+                </configuration>
+            </plugin>
+
+            <!-- 4. GPG 签名插件 (必须) -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-gpg-plugin</artifactId>
+                <version>3.2.4</version>
+                <executions>
+                    <execution>
+                        <id>sign-artifacts</id>
+                        <phase>verify</phase>
+                        <goals>
+                            <goal>sign</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <!-- 5. 新版中央仓库发布插件 -->
+            <plugin>
+                <groupId>org.sonatype.central</groupId>
+                <artifactId>central-publishing-maven-plugin</artifactId>
+                <version>0.4.0</version>
+                <extensions>true</extensions>
+                <configuration>
+                    <publishingServerId>central</publishingServerId> <!-- 对应 settings.xml 的 id -->
+                    <tokenAuth>true</tokenAuth>
+                    <!-- 设为 true 会自动发布；设为 false 需要去网页手动点击 Publish -->
+                    <autoPublish>true</autoPublish>
+                </configuration>
+            </plugin>
+
         </plugins>
     </build>
 
