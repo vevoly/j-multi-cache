@@ -57,46 +57,6 @@ public interface JMultiCacheOps {
      */
     void evictL1(String multiCacheName, Object... keyParams);
 
-    /**
-     * [集群广播] 清空指定缓存配置下的【所有】数据。
-     * 危险操作！
-     * Clears all data under the specified cache configuration.
-     * <p>
-     * [Cluster broadcast] Clear all data under the specified cache configuration.
-     * Danger!
-     */
-    void clear(String multiCacheName);
-
-    /**
-     * 获取指定缓存下的所有 Redis Key。
-     * (扫描 L2 Redis)
-     * <p>
-     * Get all Redis keys under the specified cache.
-     * (Scan L2 Redis)
-     * @param multiCacheName 缓存配置的唯一名称。/ The unique name of the cache configuration.
-     * @return Key 集合
-     */
-    Set<String> keys(String multiCacheName);
-
-    // =================================================================
-    // ======================== 开发辅助 / Dev Tools ====================
-    // =================================================================
-
-    /**
-     * 生成缓存配置枚举类文件。
-     * 根据 application.yml 中的配置，自动生成包含所有 configName 的 Java 枚举类。
-     * 方便用户在代码中以强类型方式引用缓存名。
-     * <p>
-     * Generate a cache configuration enum class file.
-     * Automatically generate a Java enum class containing all configName based on the configuration in application.yml.
-     * Convenient for users to reference the cache name in code with strong type.
-     *
-     * @param packageName 生成类的包名 (e.g., "com.example.constant")
-     * @param className   类名 (e.g., "CacheNames")
-     * @param targetDir   源码根目录路径 (e.g., "src/main/java")
-     */
-    void generateEnumClass(String packageName, String className, String targetDir);
-
     // =================================================================
     // ======================== 监控统计 / Monitoring ===================
     // =================================================================

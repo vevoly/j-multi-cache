@@ -3,9 +3,11 @@ package io.github.vevoly.jmulticache.starter.autoconfigure;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import io.github.vevoly.jmulticache.api.JMultiCache;
+import io.github.vevoly.jmulticache.api.JMultiCacheEnumGenerator;
 import io.github.vevoly.jmulticache.api.JMultiCacheOps;
 import io.github.vevoly.jmulticache.api.redis.RedisClient;
 import io.github.vevoly.jmulticache.core.config.JMultiCacheConfigResolver;
+import io.github.vevoly.jmulticache.core.internal.JMultiCacheEnumGeneratorImpl;
 import io.github.vevoly.jmulticache.core.internal.JMultiCacheManagerConfiguration;
 import io.github.vevoly.jmulticache.core.internal.JMultiCacheableAspect;
 import io.github.vevoly.jmulticache.core.internal.NoOpJMultiCacheManager;
@@ -135,7 +137,7 @@ public class JMultiCacheAutoConfiguration {
         }
 
         /**
-         * 5. 配置
+         * 5. 配置 删除本地缓存监听器
          * @param connectionFactory
          * @param jMultiCacheOps
          * @param objectMapper
@@ -152,6 +154,16 @@ public class JMultiCacheAutoConfiguration {
             JMultiCacheMessageListener listener = new JMultiCacheMessageListener(objectMapper, jMultiCacheOps);
             container.addMessageListener(listener, new ChannelTopic(J_MULTI_CACHE_EVICT_TOPIC));
             return container;
+        }
+
+        /**
+         * 6. 配置枚举生成器工具
+         * 允许用户在 Spring 环境中注入使用
+         */
+        @Bean
+        @ConditionalOnMissingBean(JMultiCacheEnumGenerator.class)
+        public JMultiCacheEnumGenerator jMultiCacheEnumGenerator() {
+            return new JMultiCacheEnumGeneratorImpl();
         }
     }
 

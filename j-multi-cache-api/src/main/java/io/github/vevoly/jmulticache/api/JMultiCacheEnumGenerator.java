@@ -22,4 +22,16 @@ public interface JMultiCacheEnumGenerator {
      * @param className 枚举类名
      */
     void generateEnum(String projectRootPath, String ymlConfigPath, String outputDir, String packageName, String className) throws IOException;
+
+    /**
+     * 自定义生成枚举。
+     *
+     * @param projectRootPath 项目根目录 (例如: System.getProperty("user.dir"))
+     * @param resourcesDir    资源目录相对路径 (例如: "src/main/resources")
+     * @param ymlFileName     配置文件名 (例如: "application.yml")
+     * @param outputDir       输出目录 (例如: "src/main/java/com/example/enums/")
+     * @param packageName     包名 (例如: "com.example.enums")
+     * @param className       类名 (例如: "CacheNames")
+     */
+    void generateEnum(String projectRootPath, String resourcesDir, String ymlFileName, String outputDir, String packageName, String className) throws IOException;
 }

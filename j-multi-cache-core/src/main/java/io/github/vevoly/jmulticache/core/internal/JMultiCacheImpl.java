@@ -139,23 +139,59 @@ class JMultiCacheImpl implements JMultiCache, JMultiCacheOps {
     }
 
     @Override
-    public void clear(String multiCacheName) {
-
-    }
-
-    @Override
-    public Set<String> keys(String multiCacheName) {
-        return null;
-    }
-
-    @Override
-    public void generateEnumClass(String packageName, String className, String targetDir) {
-
-    }
-
-    @Override
     public String getL1Stats(String multiCacheName) {
-        return null;
+        try {
+            // 1. 解析缓存配置 / Parse cache configuration
+            ResolvedJMultiCacheConfig config = configResolver.resolve(multiCacheName);
+            if (config == null) {
+                return String.format("Error: Config not found for '%s'", multiCacheName);
+            }
+            String namespace = config.getNamespace();
+
+            // 2. 从 CacheManager 获取 Spring Cache / Get Spring Cache from CacheManager
+            org.springframework.cache.Cache springCache = caffeineCacheManager.getCache(namespace);
+            if (springCache == null) {
+                return String.format("L1 Cache not initialized for namespace: %s", namespace);
+            }
+
+            // 3. 拆箱获取底层的 Caffeine Cache / Unwrap to get the underlying Caffeine Cache
+            // Spring 的 Cache.getNativeCache() 返回的就是 com.github.benmanes.caffeine.cache.Cache
+            @SuppressWarnings("unchecked")
+            com.github.benmanes.caffeine.cache.Cache<Object, Object> nativeCache =
+                    (com.github.benmanes.caffeine.cache.Cache<Object, Object>) springCache.getNativeCache();
+
+            if (nativeCache == null) {
+                return "Error: Native Caffeine cache is null.";
+            }
+
+            // 4. 获取统计快照 / Get statistics snapshot
+            com.github.benmanes.caffeine.cache.stats.CacheStats stats = nativeCache.stats();
+
+            // 5. 格式化输出 (这里返回类似于 JSON 的字符串，方便日志打印或接口返回) / Format output (here we return a string similar to JSON for easy logging or interface return)
+            // requestCount = hitCount + missCount
+            long requestCount = stats.requestCount();
+
+            return String.format(
+                    "Namespace: %s | " +
+                            "Size: %d | " +
+                            "HitRate: %.2f%% | " +
+                            "Hits: %d | " +
+                            "Misses: %d | " +
+                            "Evictions: %d | " +
+                            "LoadSuccess: %d",
+                    namespace,
+                    nativeCache.estimatedSize(), // 当前缓存条数估算值
+                    stats.hitRate() * 100,       // 命中率百分比
+                    stats.hitCount(),            // 命中次数
+                    stats.missCount(),           // 未命中次数
+                    stats.evictionCount(),       // 因为容量满或过期被驱逐的次数
+                    stats.loadSuccessCount()     // 加载成功次数
+            );
+
+        } catch (Exception e) {
+            log.error(LOG_PREFIX + "Failed to get stats for {}", multiCacheName, e);
+            return "Error retrieving stats: " + e.getMessage();
+        }
     }
 
     /**

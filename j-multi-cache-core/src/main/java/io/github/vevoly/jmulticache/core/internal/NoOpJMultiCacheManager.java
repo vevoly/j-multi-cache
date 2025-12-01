@@ -85,21 +85,6 @@ public class NoOpJMultiCacheManager implements JMultiCache, JMultiCacheOps {
     }
 
     @Override
-    public void clear(String multiCacheName) {
-
-    }
-
-    @Override
-    public Set<String> keys(String multiCacheName) {
-        return null;
-    }
-
-    @Override
-    public void generateEnumClass(String packageName, String className, String targetDir) {
-
-    }
-
-    @Override
     public String getL1Stats(String multiCacheName) {
         return null;
     }

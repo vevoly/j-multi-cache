@@ -269,7 +269,6 @@ public class RedissonRedisClient implements RedisClient {
         }
         redisson.getTopic(channel, org.redisson.client.codec.StringCodec.INSTANCE)
                 .publish(jsonMsg);
-//        redisson.getTopic(channel).publish(message);
     }
 
     @Override
