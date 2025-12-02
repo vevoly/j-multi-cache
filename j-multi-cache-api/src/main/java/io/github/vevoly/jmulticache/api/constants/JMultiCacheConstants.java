@@ -10,8 +10,10 @@ package io.github.vevoly.jmulticache.api.constants;
 public interface JMultiCacheConstants {
 
     // ===================================================================
-    // ====================== 空缓存相关常量 / Null Caching Constants ======================
+    // ====================== 空缓存相关常量 / Null Caching Constants ======
     // ===================================================================
+
+    String NONE = "NONE";
 
     /**
      * 用于表示缓存中“空值”的特殊标记字符串，以防止缓存穿透。
@@ -28,7 +30,7 @@ public interface JMultiCacheConstants {
     long EMPTY_CACHE_REDIS_TTL = 60;
 
     // ===================================================================
-    // =============== L1 缓存失效通知相关常量 / L1 Cache Invalidation Constants ===============
+    // ===== L1 缓存失效通知相关常量 / L1 Cache Invalidation Constants ======
     // ===================================================================
 
     /**

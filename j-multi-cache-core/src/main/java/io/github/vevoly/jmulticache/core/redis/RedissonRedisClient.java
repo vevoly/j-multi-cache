@@ -5,11 +5,13 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.github.vevoly.jmulticache.api.constants.JMultiCacheConstants;
 import io.github.vevoly.jmulticache.api.redis.RedisClient;
 import io.github.vevoly.jmulticache.api.redis.batch.BatchOperation;
+import io.github.vevoly.jmulticache.api.structure.JMultiCacheScoredEntry;
 import io.github.vevoly.jmulticache.core.redis.batch.RedissonBatchOperation;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.redisson.api.*;
 import org.redisson.client.codec.StringCodec;
+import org.redisson.client.protocol.ScoredEntry;
 
 import java.time.Duration;
 import java.util.*;
@@ -53,6 +55,15 @@ public class RedissonRedisClient implements RedisClient {
         if (timeout != null && !timeout.isNegative()) {
             redisson.getKeys().expire(key, timeout.toSeconds(), TimeUnit.SECONDS);
         }
+    }
+
+    @Override
+    public String type(String key) {
+        RType type = redisson.getKeys().getType(key);
+        if (type == null) {
+            return JMultiCacheConstants.NONE;
+        }
+        return type.toString();
     }
 
     @Override
@@ -199,6 +210,31 @@ public class RedissonRedisClient implements RedisClient {
             errorResult.put(JMultiCacheConstants.UNION_RESULT, Collections.emptySet());
             errorResult.put(JMultiCacheConstants.UNION_MISSED_KEYS, keys);
             return errorResult;
+        }
+    }
+
+    @Override
+    public Collection<JMultiCacheScoredEntry<String>> zRangeWithScores(String key, int start, int end) {
+        RScoredSortedSet<String> zset = redisson.getScoredSortedSet(key);
+        // 1. 获取 Redisson 的结果 / Get the result of Redisson
+        Collection<ScoredEntry<String>> redissonEntries = zset.entryRange(start, end);
+        if (redissonEntries == null || redissonEntries.isEmpty()) {
+            return Collections.emptyList();
+        }
+        // 2. 转换为框架通用的 API 对象 / Convert to the framework's common API object
+        List<JMultiCacheScoredEntry<String>> result = new ArrayList<>(redissonEntries.size());
+        for (ScoredEntry<String> entry : redissonEntries) {
+            result.add(new JMultiCacheScoredEntry<>(entry.getValue(), entry.getScore()));
+        }
+        return result;
+    }
+
+    @Override
+    public void zAdd(String key, Map<Object, Double> scoreMembers, Duration ttl) {
+        RScoredSortedSet<Object> zset = redisson.getScoredSortedSet(key);
+        zset.addAll(scoreMembers);
+        if (ttl != null) {
+            zset.expire(ttl);
         }
     }
 

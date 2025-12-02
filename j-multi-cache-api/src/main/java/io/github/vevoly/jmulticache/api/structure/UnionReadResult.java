@@ -1,4 +1,4 @@
-package io.github.vevoly.jmulticache.api.wrap;
+package io.github.vevoly.jmulticache.api.structure;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;

@@ -40,6 +40,14 @@ public interface BatchOperation {
     CompletableFuture<Void> deleteAsync(String... keys);
 
     /**
+     * 批量添加 ZSet 元素 (ZADD)。
+     *
+     * @param key          Redis Key
+     * @param scoreMembers 成员与分数的映射 Map<Member, Score>
+     */
+    void zAddAsync(String key, Map<Object, Double> scoreMembers);
+
+    /**
      * 执行所有已缓存的批量命令。
      * <p>
      * Executes all cached batch commands.

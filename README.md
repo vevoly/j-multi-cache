@@ -84,7 +84,7 @@ Designed for Spring Boot to solve caching challenges in high-concurrency scenari
 <dependency>
     <groupId>io.github.vevoly</groupId>
     <artifactId>j-multi-cache-spring-boot-starter</artifactId>
-    <version>1.0.0-SNAPSHOT</version>
+    <version>1.0.0</version>
 </dependency>
 ```
 

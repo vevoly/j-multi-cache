@@ -13,7 +13,7 @@
     <artifactId>j-multi-cache-api</artifactId>
     <name>j-multi-cache-api</name>
     <url>https://github.com/vevoly/j-multi-cache</url>
-    <description>API and core models for j-multi-cache</description>
+    <description>API models for j-multi-cache</description>
 
     <dependencies>
         <dependency>

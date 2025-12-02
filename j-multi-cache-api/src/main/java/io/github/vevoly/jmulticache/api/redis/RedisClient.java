@@ -1,6 +1,7 @@
 package io.github.vevoly.jmulticache.api.redis;
 
 import io.github.vevoly.jmulticache.api.redis.batch.BatchOperation;
+import io.github.vevoly.jmulticache.api.structure.JMultiCacheScoredEntry;
 
 import java.time.Duration;
 import java.util.Collection;
@@ -64,6 +65,15 @@ public interface RedisClient {
      * @param timeout 过期时间 / the timeout
      */
     void expire(String key, Duration timeout);
+
+    /**
+     * 获取 Key 的存储类型。
+     * 对应 Redis 命令: TYPE key
+     *
+     * @param key 缓存 Key
+     * @return 类型字符串 (例如: "string", "list", "set", "zset", "hash", "none")
+     */
+    String type(String key);
 
     // ===================================================================
     // ======== String / Object 操作 / String or Object Operations ========
@@ -168,6 +178,31 @@ public interface RedisClient {
      *         A Map containing "unionResult" (the union of existing keys) and "missedKeys" (the list of non-existent keys).
      */
     Map<String, Object> sunionAndFindMisses(List<String> keys);
+
+    // ===================================================================
+    // ======================== ZSet 操作 / ZSet Operations ===============
+    // ===================================================================
+
+    /**
+     * 获取 ZSet 范围数据，包含分数。
+     * <p>
+     * Get ZSet range data, including scores.
+     *
+     * @param key 键 / the key
+     * @param start 起始索引 / the start index
+     */
+    Collection<JMultiCacheScoredEntry<String>> zRangeWithScores(String key, int start, int end);
+
+    /**
+     * 添加 ZSet 数据。
+     * <p>
+     * Add ZSet data.
+     *
+     * @param key 键 / the key
+     * @param scoreMembers 分数和成员的映射 / a map of scores and members
+     * @param ttl 过期时间 / the expiration time
+     */
+    void zAdd(String key, Map<Object, Double> scoreMembers, Duration ttl);
 
     // ===================================================================
     // ======================== Hash 操作 / Hash Operations ===============

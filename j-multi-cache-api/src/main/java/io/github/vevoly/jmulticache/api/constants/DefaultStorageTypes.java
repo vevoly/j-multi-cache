@@ -45,6 +45,15 @@ public final class DefaultStorageTypes {
     public static final String SET = "SET";
 
     /**
+     * 对应 Java 的 List 结构，使用 Redis ZSet (Sorted Set) 存储。
+     * 适用于排行榜、延迟队列等需要排序和权重的场景。
+     * <p>
+     * Corresponds to a Java List structure, stored using Redis ZSet (Sorted Set).
+     * Suitable for scenarios requiring sorting and weights, such as leaderboards and delay queues.
+     */
+    public static final String ZSET = "ZSET";
+
+    /**
      * 对应 Java 的 Map<K, V> 结构，通常使用 Redis Hash 存储。
      * <p>
      * Corresponds to a Java Map<K, V> structure, typically stored in a Redis Hash.

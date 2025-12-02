@@ -1,7 +1,6 @@
 package io.github.vevoly.jmulticache.core.internal;
 
 import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.benmanes.caffeine.cache.Cache;
 import io.github.vevoly.jmulticache.api.JMultiCache;
 import io.github.vevoly.jmulticache.api.JMultiCacheOps;
@@ -14,7 +13,7 @@ import io.github.vevoly.jmulticache.api.redis.batch.BatchOperation;
 import io.github.vevoly.jmulticache.api.strategy.FieldBasedStorageStrategy;
 import io.github.vevoly.jmulticache.api.strategy.RedisStorageStrategy;
 import io.github.vevoly.jmulticache.api.utils.JMultiCacheHelper;
-import io.github.vevoly.jmulticache.api.wrap.UnionReadResult;
+import io.github.vevoly.jmulticache.api.structure.UnionReadResult;
 import io.github.vevoly.jmulticache.core.config.JMultiCacheConfigResolver;
 import io.github.vevoly.jmulticache.core.utils.I18nLogger;
 import io.github.vevoly.jmulticache.core.utils.JMultiCacheContextHandler;

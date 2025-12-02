@@ -4,7 +4,7 @@ import io.github.vevoly.jmulticache.api.config.ResolvedJMultiCacheConfig;
 import io.github.vevoly.jmulticache.api.constants.DefaultStorageTypes;
 import io.github.vevoly.jmulticache.api.redis.RedisClient;
 import io.github.vevoly.jmulticache.api.redis.batch.BatchOperation;
-import io.github.vevoly.jmulticache.api.wrap.UnionReadResult;
+import io.github.vevoly.jmulticache.api.structure.UnionReadResult;
 import com.fasterxml.jackson.core.type.TypeReference;
 
 import java.util.List;

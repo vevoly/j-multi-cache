@@ -10,7 +10,7 @@ import io.github.vevoly.jmulticache.api.redis.RedisClient;
 import io.github.vevoly.jmulticache.api.redis.batch.BatchOperation;
 import io.github.vevoly.jmulticache.api.strategy.RedisStorageStrategy;
 import io.github.vevoly.jmulticache.api.utils.JMultiCacheHelper;
-import io.github.vevoly.jmulticache.api.wrap.UnionReadResult;
+import io.github.vevoly.jmulticache.api.structure.UnionReadResult;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;

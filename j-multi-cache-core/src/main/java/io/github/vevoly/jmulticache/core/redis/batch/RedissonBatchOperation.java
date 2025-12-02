@@ -4,6 +4,7 @@ import io.github.vevoly.jmulticache.api.redis.batch.BatchOperation;
 import lombok.RequiredArgsConstructor;
 import org.redisson.api.RBatch;
 import org.redisson.api.RFuture;
+import org.redisson.api.RScoredSortedSetAsync;
 import org.redisson.client.codec.StringCodec;
 
 import java.time.Duration;
@@ -128,7 +129,6 @@ public class RedissonBatchOperation implements BatchOperation {
     @Override
     public CompletableFuture<Void> expireAsync(String key, Duration ttl) {
         if (ttl == null || ttl.isNegative() || ttl.isZero()) {
-            // 如果 ttl 无效，返回一个已完成的 Future
             return CompletableFuture.completedFuture(null);
         }
         RFuture<Boolean> future = redissonBatch.getBucket(key).expireAsync(ttl);
@@ -144,9 +144,12 @@ public class RedissonBatchOperation implements BatchOperation {
         return toCompletableFuture(future);
     }
 
-    /**
-     * {@inheritDoc}
-     */
+    @Override
+    public void zAddAsync(String key, Map<Object, Double> scoreMembers) {
+        RScoredSortedSetAsync<Object> zset = redissonBatch.getScoredSortedSet(key);
+        zset.addAllAsync(scoreMembers);
+    }
+
     @Override
     public void execute() {
         // Redisson 的 execute 方法返回 BatchResult，但我们的接口是 void，所以直接调用即可。
