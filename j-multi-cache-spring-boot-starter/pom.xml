@@ -7,7 +7,7 @@
     <parent>
         <groupId>io.github.vevoly</groupId>
         <artifactId>j-multi-cache-parent</artifactId>
-        <version>1.0.0</version>
+        <version>1.0.1</version>
     </parent>
 
     <artifactId>j-multi-cache-spring-boot-starter</artifactId>
