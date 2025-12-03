@@ -74,7 +74,7 @@ class JMultiCacheImpl implements JMultiCache, JMultiCacheOps {
 
         if (strategies != null) {
             for (RedisStorageStrategy<?> strategy : strategies) {
-                this.strategyMap.put(strategy.getStorageType(), strategy);
+                this.strategyMap.put(strategy.getStorageType().toUpperCase(), strategy);
             }
         }
     }

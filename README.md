@@ -1,20 +1,19 @@
 # j-multi-cache
 #### 作者 Author：VEVOLY
 
-🚀 **一个基于 Redis (L2) + Caffeine (L1) 的轻量级、高性能分布式多级缓存框架。**
+🚀 **一个基于 Redis (L2) + Caffeine (L1) 的轻量级、高性能分布式多级缓存框架。**  
 🚀 **A lightweight, high-performance distributed multi-level cache framework based on Redis (L2) + Caffeine (L1).**
 
-专为 Spring Boot 设计，旨在解决高并发场景下的缓存难题。提供注解式缓存、防缓存穿透、自动刷新、分布式一致性保障以及多种复杂数据结构支持。
-
+专为 Spring Boot 设计，旨在解决高并发场景下的缓存难题。提供注解式缓存、防缓存穿透、自动刷新、分布式一致性保障以及多种复杂数据结构支持。  
 Designed for Spring Boot to solve caching challenges in high-concurrency scenarios. It offers annotation-based caching, anti-penetration strategies, auto-refresh, distributed consistency, and support for various complex data structures.
 
 ---
 
 ## ✨ 核心特性 / Key Features
 
-*   **🌞 多级缓存架构 / Multi-level Caching Architecture**
-    *   **L1 (本地缓存 / Local)**：集成 **Caffeine**，极速访问，支持进程内高频读取，微秒级响应。
-    *   **L2 (分布式缓存 / Distributed)**：集成 **Redis (Redisson)**，支持分布式共享，数据持久化，防止应用重启导致缓存雪崩。
+*   **🌞 多级缓存架构 / Multi-level Caching Architecture**  
+    *   **L1 (本地缓存 / Local)**：集成 **Caffeine**，极速访问，支持进程内高频读取，微秒级响应。  
+    *   **L2 (分布式缓存 / Distributed)**：集成 **Redis (Redisson)**，支持分布式共享，数据持久化，防止应用重启导致缓存雪崩。  
     *   **L1 (Local)**: Integrated with **Caffeine** for ultra-fast access, supporting high-frequency in-process reads with microsecond latency.
     *   **L2 (Distributed)**: Integrated with **Redis (Redisson)** for distributed sharing and data persistence, preventing cache avalanches during application restarts.
 *   **⚡️️ 快速开发 / Fast Developer**
@@ -79,18 +78,24 @@ Designed for Spring Boot to solve caching challenges in high-concurrency scenari
 #### 可以拉简单测试项目，快速了解如何使用【J-Multi-Cache-Test】https://github.com/vevoly/j-multi-cache-test
 #### You can pull the simple test project, as quickly as to start. [J-Multi-Cache-Test](https://github.com/vevoly/j-multi-cache-test)
 ### 1. 引入依赖 / Add Dependency
-
+#### 1.1 Maven
 ```xml
+<!-- https://mvnrepository.com/artifact/io.github.vevoly/j-multi-cache-spring-boot-starter -->
 <dependency>
     <groupId>io.github.vevoly</groupId>
     <artifactId>j-multi-cache-spring-boot-starter</artifactId>
     <version>1.0.0</version>
 </dependency>
 ```
+#### 1.2 Gradle
+```gradle   
+// https://mvnrepository.com/artifact/io.github.vevoly/j-multi-cache-spring-boot-starter
+implementation("io.github.vevoly:j-multi-cache-spring-boot-starter:1.0.0")
+```
 
 ### 2. 启用缓存 / Enable Caching
 
-在 Spring Boot 启动类上添加 `@EnableJMultiCache` 注解。
+在 Spring Boot 启动类上添加 `@EnableJMultiCache` 注解。  
 Add the `@EnableJMultiCache` annotation to your Spring Boot application class.
 
 ```java
@@ -158,14 +163,13 @@ j-multi-cache:
       local-ttl: 1m
       local-max-size: 1000
 ```
-
 ---
 
 ## 💻 使用指南 / Usage Guide
 
 ### 1. 注解式使用 (推荐) / Annotation (Recommended)
 
-在 Service 方法上添加 `@JMultiCacheable`，即可自动接管缓存逻辑。
+在 Service 方法上添加 `@JMultiCacheable`，即可自动接管缓存逻辑。  
 Add `@JMultiCacheable` to Service methods to automatically handle caching logic.
 
 ```java
@@ -207,7 +211,7 @@ public class UserService {
 
 ### 2. 手动 API 调用 / Manual API
 
-对于复杂的业务逻辑，或者无法使用注解的场景，注入 `JMultiCache` 接口。
+对于复杂的业务逻辑，或者无法使用注解的场景，注入 `JMultiCache` 接口。  
 For complex logic or scenarios where annotations apply, inject the `JMultiCache` interface.
 
 ```java
@@ -227,7 +231,7 @@ public User getUserManual(Long id) {
 
 ### 3. 缓存管理与清理 (Ops) / Management & Ops
 
-注入 `JMultiCacheOps` 进行缓存删除、预热等运维操作。
+注入 `JMultiCacheOps` 进行缓存删除、预热等运维操作。  
 Inject `JMultiCacheOps` for operations like cache eviction and preloading.
 
 ```java
@@ -260,7 +264,6 @@ public class UserService {
     // ...
 }
 ```
-
 #### 4.2 手动模式 / Manual Mode
 
 ```java
@@ -292,12 +295,88 @@ public class UserService implements JMultiCachePreload {
     }
 }
 ```
+### 5. 自定义存储结构 (Custom Storage Structure)
 
----
+如果内置的 `list`, `set`, `zset`, `string`, `hash`, `page`, `union` 无法满足需求（例如需要**压缩存储**大文本，或进行**加密存储**），您可以轻松扩展自定义策略。  
+If built-in types like `list`, `set`, `zset` don't meet your needs (e.g., you need **compression** for large text or **encryption**), you can easily extend custom strategies.
+
+#### 5.1 实现策略接口 / Implement Strategy Interface
+创建一个类实现 `RedisStorageStrategy<T>` 接口，并定义一个唯一的 `storageType`。  
+Create a class that implements `RedisStorageStrategy<T>` and define a unique `storageType`.
+
+```java
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import io.github.vevoly.jmulticache.core.config.ResolvedJMultiCacheConfig;
+import io.github.vevoly.jmulticache.core.redis.RedisClient;
+import io.github.vevoly.jmulticache.core.strategy.RedisStorageStrategy;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
+
+@Component // 方式 A: 使用 @Component 自动扫描 / Method A: Auto-scan via @Component
+public class GzipStorageStrategy implements RedisStorageStrategy<Object> {
+
+    @Autowired
+    private ObjectMapper objectMapper;
+
+    @Override
+    public String getStorageType() {
+        return "gzip"; // 自定义类型名称 / Custom type name
+    }
+
+    @Override
+    public Object read(RedisClient client, String key, TypeReference<Object> typeRef, ResolvedJMultiCacheConfig config) {
+        String base64 = (String) client.get(key);
+        if (base64 == null) return null;
+        // 解压逻辑 (伪代码) / Decompress logic (Pseudo code)
+        String json = GzipUtils.decompress(base64);
+        return objectMapper.readValue(json, typeRef);
+    }
+
+    @Override
+    public void write(RedisClient client, String key, Object value, ResolvedJMultiCacheConfig config) {
+        // 压缩逻辑 (伪代码) / Compress logic (Pseudo code)
+        String json = objectMapper.writeValueAsString(value);
+        String base64 = GzipUtils.compress(json);
+        client.set(key, base64, config.getRedisTtl());
+    }
+
+    // ... implement other methods (readMulti, writeMulti)
+}
+```
+#### 5.2 注册策略 Bean / Register Strategy Bean
+确保您的策略类被 Spring 容器管理。如果您的策略类不在 Spring Boot 主程序的扫描路径下，需要手动导入。  
+Ensure your strategy class is managed by Spring. If it's outside the main scan path, import it manually.  
+*   方式 A：自动扫描 (推荐) / Method A: Auto Scan (Recommended)  
+在类上添加 @Component，并确保它在 @SpringBootApplication 的包或子包下。  
+Add @Component and ensure it's under the package of @SpringBootApplication.  
+*   方式 B：显式导入 / Method B: Explicit Import  
+在配置类上使用 @Import 导入。
+Use @Import on your configuration class.
+```java
+@Configuration
+@Import(GzipStorageStrategy.class) // 手动注册 / Manual registration
+public class CacheConfig {
+}
+```
+#### 5.3 修改配置 / Configure YAML
+在配置文件中，将 storage-type 设置为您定义的名称。  
+In application.yml, set storage-type to your defined name.
+```yaml
+j-multi-cache:
+  configs:
+    BIG_ARTICLE_CACHE:
+      namespace: "app:article:content"
+      storage-type: gzip  # 🔥 对应 getStorageType() 的返回值 / Matches return value
+      redis-ttl: 24h
+      local-ttl: 10m
+      entity-class: "com.example.entity.Article"
+      key-field: "#id"
+```
 
 ## 🛠 进阶工具：枚举生成器 / Advanced Tool: Enum Generator
 
-为了避免在代码中手写 `"TEST_USER"` 这种容易出错的字符串，框架提供了代码生成工具。它会读取 `application.yml` 并生成 Java 枚举。
+为了避免在代码中手写 `"TEST_USER"` 这种容易出错的字符串，框架提供了代码生成工具。它会读取 `application.yml` 并生成 Java 枚举。  
 To avoid hardcoding magic strings like `"TEST_USER"`, the framework provides a code generator that reads `application.yml` and generates Java Enums.
 
 **在单元测试中运行一次即可 / Run once in a Unit Test:**
@@ -370,13 +449,32 @@ public class UserServiceImpl implements UserService {
 ```
 
 ### 2. Redis 乱码问题？/ Redis garbled data?
-框架底层使用了 `Redisson` 并强制配置了 `StringCodec`。
-The framework uses `Redisson` under the hood and enforces `StringCodec`.
-请确保不要混用 Spring Boot 默认的 `RedisTemplate<Object, Object>`（它使用 JDK 序列化）。
-Please ensure you do not mix it with Spring Boot's default `RedisTemplate<Object, Object>` (which uses JDK serialization).
-**验证数据时，请使用 `StringRedisTemplate`。**
+框架底层使用了 `Redisson` 并强制配置了 `StringCodec`。  
+The framework uses `Redisson` under the hood and enforces `StringCodec`.  
+请确保不要混用 Spring Boot 默认的 `RedisTemplate<Object, Object>`（它使用 JDK 序列化）。  
+Please ensure you do not mix it with Spring Boot's default `RedisTemplate<Object, Object>` (which uses JDK serialization).  
+**验证数据时，请使用 `StringRedisTemplate`。**  
 **Use `StringRedisTemplate` when verifying data.**
 
+### 3. key-field 与 businessKey 的区别？/ What's the difference between key-field and businessKey?
+* key-field (YAML 配置 / Config):
+  * 作用阶段: 请求前。
+  * 数据来源: 方法入参。
+  * 语法: SpEL 表达式。
+  * 目的: 告诉框架 “怎么生成 Key 去查缓存”。
+  * Phase: Before Query.
+  * Source: Method Arguments.
+  * Syntax: SpEL (e.g., #id).
+  * Purpose: Tells the framework "How to build the key to query the cache".
+* businessKey (代码参数 / Code Param):
+  * 作用阶段: 手动模式批量查库后。
+  * 数据来源: 数据库返回的实体对象。
+  * 语法: Java 字段名 (String) (如 "userId", "id")。
+  * 目的: 告诉框架 “这个查回来的对象属于哪个 Key” (用于将 DB 结果回填到 Redis)。
+  * Phase: After Batch Query By Manual.
+  * Source: DB Result Entity.
+  * Syntax: Java Field Name (e.g., "userId").
+  * Purpose: Tells the framework "Which key does this object belong to" (Used to populate Redis after a DB miss).
 ---
 
 ## 📝 License
