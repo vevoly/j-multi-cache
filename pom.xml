@@ -6,7 +6,7 @@
 
     <groupId>io.github.vevoly</groupId>
     <artifactId>j-multi-cache-parent</artifactId>
-    <version>1.0.1</version>
+    <version>${revision}</version>
     <packaging>pom</packaging>
 
     <name>j-multi-cache</name>
@@ -39,6 +39,7 @@
     </scm>
 
     <properties>
+        <revision>1.0.2</revision>
         <java.version>17</java.version>
         <maven.compiler.source>${java.version}</maven.compiler.source>
         <maven.compiler.target>${java.version}</maven.compiler.target>
@@ -59,10 +60,6 @@
         <module>j-multi-cache-spring-boot-starter</module>
     </modules>
 
-    <!--
-        Dependency Management: 统一管理所有依赖的版本，子模块无需指定 version。
-        Dependency Management: Manages versions for all dependencies; child modules do not need to specify a version.
-    -->
     <dependencyManagement>
         <dependencies>
 
@@ -138,7 +135,34 @@
 
     <build>
         <plugins>
-            <!-- 1. 编译插件 -->
+
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>flatten-maven-plugin</artifactId>
+                <version>1.6.0</version>
+                <configuration>
+                    <!-- 核心模式：解析 CI Friendly 变量 -->
+                    <updatePomFile>true</updatePomFile>
+                    <flattenMode>resolveCiFriendliesOnly</flattenMode>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>flatten</id>
+                        <phase>process-resources</phase>
+                        <goals>
+                            <goal>flatten</goal>
+                        </goals>
+                    </execution>
+                    <execution>
+                        <id>flatten.clean</id>
+                        <phase>clean</phase>
+                        <goals>
+                            <goal>clean</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
@@ -157,7 +181,6 @@
                 </configuration>
             </plugin>
 
-            <!-- 2. 源码打包插件 (必须) -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-source-plugin</artifactId>
@@ -172,7 +195,6 @@
                 </executions>
             </plugin>
 
-            <!-- 3. Javadoc 打包插件 (必须) -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-javadoc-plugin</artifactId>
@@ -197,7 +219,6 @@
                 </configuration>
             </plugin>
 
-            <!-- 4. GPG 签名插件 (必须) -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-gpg-plugin</artifactId>
@@ -213,14 +234,13 @@
                 </executions>
             </plugin>
 
-            <!-- 5. 新版中央仓库发布插件 -->
             <plugin>
                 <groupId>org.sonatype.central</groupId>
                 <artifactId>central-publishing-maven-plugin</artifactId>
                 <version>0.4.0</version>
                 <extensions>true</extensions>
                 <configuration>
-                    <publishingServerId>central</publishingServerId> <!-- 对应 settings.xml 的 id -->
+                    <publishingServerId>central</publishingServerId>
                     <tokenAuth>true</tokenAuth>
                     <!-- 设为 true 会自动发布；设为 false 需要去网页手动点击 Publish -->
                     <autoPublish>true</autoPublish>
