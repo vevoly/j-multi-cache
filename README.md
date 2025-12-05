@@ -37,10 +37,10 @@ Designed for Spring Boot to solve caching challenges in high-concurrency scenari
     *   Specially optimized serialization and deserialization for Spring Data **Page** objects.
     *   Supports user-defined storage-data structures.
 *   **🛠️ 极致的开发体验 / Ultimate Developer Experience**
-    *   **SpEL 表达式**: 支持通过 SpEL 灵活定义缓存 Key，支持多参数组合。
+    *   **SpEL 表达式**: 支持通过 SpEL 灵活定义缓存 Key（包括带有固定后缀的key），支持多参数组合。用法详见常见问题4.  
     *   **代码生成器**: 提供工具类自动读取 YAML 配置生成 Java 枚举，拒绝在代码中硬编码字符串 Key。
     *   **缓存预热**: 支持应用启动时自动从数据库加载热点数据到 L1/L2。
-    *   **SpEL Support**: Flexible cache Key definition via SpEL, supporting multi-parameter combinations.
+    *   **SpEL Support**: Flexible cache Key definition via SpEL(including fixed suffix), supporting multi-parameter combinations. For usage, see FAQ 4.  
     *   **Code Generator**: Provides tools to auto-generate Java Enums from YAML configs, eliminating hardcoded string Keys.
     *   **Cache Preloading**: Supports automatic loading of hot data from the database into L1/L2 during application startup.
 
@@ -476,6 +476,75 @@ Please ensure you do not mix it with Spring Boot's default `RedisTemplate<Object
   * Syntax: Java Field Name (e.g., "userId").
   * Purpose: Tells the framework "Which key does this object belong to" (Used to populate Redis after a DB miss).
 ---
+
+### 4. 如何处理复杂拼接的缓存 Key？/ How to handle complex cache keys?
+
+**场景**：业务需要根据多个参数组合生成 Key，或者 Key 包含固定的后缀。  
+**Scenario**: The business logic requires generating a Key based on multiple parameters, or the Key contains a fixed suffix.  
+**例如**：`app:user:1001:detail` (Namespace + ID + Suffix)。
+
+框架提供了强大的 **SpEL (Spring Expression Language)** 支持来解决此类问题。
+The framework provides powerful **SpEL** support to solve such problems.
+
+#### 4.1 配置 SpEL 表达式 / Configure SpEL
+
+在 `application.yml` 中定义拼接规则。  
+Define the concatenation rule in `application.yml`.
+
+```yaml
+j-multi-cache:
+  configs:
+    USER_DETAIL_CACHE:
+      namespace: "app:user"
+      # 组合参数，并添加固定后缀 / Combine params and add fixed suffix
+      # 最终 Key: app:user:{id}:suffix
+      key-field: "#id + ':suffix'"
+  ```
+
+#### 4.2 注解调用 (自动处理) / Annotation (Auto)
+方法参数名需与 SpEL 变量对应。  
+Method parameter names must match SpEL variables.
+```java
+@JMultiCacheable(configName = "USER_DETAIL_CACHE")
+public User getUser(Long id) {
+    // Framework generates: app:user:1001:suffix
+    return userMapper.select(id);
+}
+```
+
+#### 4.3 手动 API 调用  / Manual API \
+不要自己拼接字符串，而是将参数传给框架，让框架根据配置自动生成。   
+Do not concatenate strings manually. Pass parameters to the framework, and let it generate the key based on the config.
+```java
+// 调用方法1 / Call method 1
+jMultiCache.fetchData(
+    "USER_DETAIL_CACHE",
+    () -> userMapper.select(id),
+    String.valueOf(id), "detail" // 传入参数，框架自动代入 SpEL
+);
+
+// 调用方法2 / Call method 2
+// 适用于更为复杂的key拼接规则，用户拼接好完整的 key 字符串，传入参数即可
+// Applicable to more complex key concatenation rules. Users can pass parameters after concatenating the complete key string.        
+jMultiCache.fetchData("app:user:1001:detail", () -> dbLoader())
+```
+
+#### 4.4 获取计算后的 Key / Compute the Key
+如果您仅仅想获取最终生成的 Redis Key 字符串，可以使用 computeKey 方法。  
+If you just want to get the final generated Redis Key string (e.g., for logging), use the computeKey method.
+```java
+// 返回 / Returns: "app:user:1001:suffix"
+String fullKey = jMultiCacheOps.computeKey("USER_DETAIL_CACHE", 1001, "suffix");
+```
+#### 4.5 获取简单的字符串拼接 Key / Get simple string concatenation key  
+如果您只想获取简单的字符串拼接的key，可以使用 JMultiCacheHelper.buildKey 方法或者手动生成的名称枚举类的buildKey方法  
+If you only want to get the simple string concatenation key, you can use the JMultiCacheHelper.buildKey() method or the buildKey method of the manually generated name enumeration class
+```java
+// 1. 使用 JMultiCacheHelper.buildKey 方法 / Use JMultiCacheHelper.buildKey method
+String fullKey = JMultiCacheHelper.buildKey("app:user:", 1001, "suffix");
+// 2. 使用名称枚举类的buildKey方法 / Use the buildKey method of the name enumeration class
+String fullKey = JMultiCacheNameEnum.USER_DETAIL_CACHE.buildKey(1001, "suffix");
+```
 
 ## 📝 License
 

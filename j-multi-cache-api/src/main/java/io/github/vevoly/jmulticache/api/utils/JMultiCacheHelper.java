@@ -1,12 +1,12 @@
 package io.github.vevoly.jmulticache.api.utils;
 
-import com.baomidou.mybatisplus.core.toolkit.CollectionUtils;
-import com.baomidou.mybatisplus.core.toolkit.StringUtils;
 import io.github.vevoly.jmulticache.api.config.ResolvedJMultiCacheConfig;
 import io.github.vevoly.jmulticache.api.constants.JMultiCacheConstants;
 
-import java.util.*;
-import java.util.function.Function;
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 /**
  * j-multi-cache 框架的公共辅助工具类。
@@ -24,19 +24,26 @@ public final class JMultiCacheHelper {
     private JMultiCacheHelper() {}
 
     /**
-     * 拼接缓存key
-     * @param namespace
-     * @param key
-     * @return
+     * 构建完整的 Redis Key。
+     * <p>
+     * 规则：namespace + ":" + keyParts[0] + ":" + keyParts[1] ...
+     * <p>
+     * <strong>注意：</strong>
+     * 如果您的缓存配置中包含后缀（例如 SpEL: #id + ':suffix'），
+     * 请务必在此处手动传入该后缀，否则生成的 Key 将无法命中缓存。
+     *
+     * @param namespace 命名空间
+     * @param keyParts  Key 的组成部分（支持多个，包含 ID 和后缀）
+     * @return 拼接后的 Key
      */
-    public static String buildKey(String namespace, String... key) {
+    public static String buildKey(String namespace, String... keyParts) {
         if (namespace == null) {
             throw new IllegalArgumentException("namespace 不能为空");
         }
-        if (key == null || key.length == 0) {
+        if (keyParts == null || keyParts.length == 0) {
             return namespace;
         }
-        return namespace + ":" + String.join(":", key);
+        return namespace + ":" + String.join(":", keyParts);
     }
 
     /**
@@ -77,6 +84,8 @@ public final class JMultiCacheHelper {
 
     /**
      * 获取空值标记
+     * Get the empty value marker
+     *
      * @param config
      * @return
      */
@@ -86,6 +95,8 @@ public final class JMultiCacheHelper {
 
     /**
      * 判断是否为空
+     * Determine whether it is empty
+     *
      * @param result
      * @return
      * @param <T>
@@ -100,7 +111,6 @@ public final class JMultiCacheHelper {
 
     /**
      * 判断从数据库直接查询的结果是否为空。
-     * <p>
      * Checks if the result queried directly from the database is effectively empty.
      *
      * @param result 从数据库返回的对象。/ The object returned from the database.
@@ -116,6 +126,8 @@ public final class JMultiCacheHelper {
     /**
      * 将空标记转换为空数据
      * 用于数据返回
+     *
+     * Converts empty markers to empty data.
      * @param result
      * @return
      * @param <T>

@@ -12,9 +12,18 @@ import java.util.Set;
  */
 public interface JMultiCacheOps {
 
-    // =================================================================
-    // ======================== 运维管理 / Operations ===================
-    // =================================================================
+    /**
+     * 根据配置和参数，计算最终的 Redis Key。
+     * 会执行 SpEL 表达式解析。
+     * <p>
+     * According to the configuration and parameters, calculate the final Redis Key.
+     * SpEL expression parsing is performed.
+     *
+     * @param multiCacheName 缓存配置名 / The cache configuration name.
+     * @param keyParams      参数列表  / The parameter list.
+     * @return 完整的 Redis Key
+     */
+    String computeKey(String multiCacheName, Object... keyParams);
 
     /**
      * 手动预热缓存。
@@ -56,10 +65,6 @@ public interface JMultiCacheOps {
      * @param keyParams      用于构建要清除的缓存键的动态参数。/ The dynamic parameters to build the final cache key to evict.
      */
     void evictL1(String multiCacheName, Object... keyParams);
-
-    // =================================================================
-    // ======================== 监控统计 / Monitoring ===================
-    // =================================================================
 
     /**
      * 获取 L1 缓存的统计信息。

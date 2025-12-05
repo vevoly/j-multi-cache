@@ -44,9 +44,6 @@ public class NoOpJMultiCacheManager implements JMultiCache, JMultiCacheOps {
 
     @Override
     public <K, V> Map<K, ?> fetchMultiDataMap(String multiCacheName, Collection<K> ids, String businessKey, Function<Collection<K>, V> queryFunction) {
-        // 这里需要一点逻辑把 List 转 Map，或者如果 queryFunction 本身返回 Map 就直接返回
-        // 简便起见，如果未启用，甚至可以返回空，或者抛出不支持异常，视业务宽容度而定。
-        // 但为了健壮性，建议让 queryFunction 执行。
         Object result = queryFunction.apply(ids);
         if (result instanceof Map) {
             return (Map<K, ?>) result;
@@ -66,6 +63,11 @@ public class NoOpJMultiCacheManager implements JMultiCache, JMultiCacheOps {
 
     @Override
     public <T> T fetchHashData(String hashKey, String field, Class<T> resultType, Supplier<T> queryFunction) {
+        return null;
+    }
+
+    @Override
+    public String computeKey(String multiCacheName, Object... keyParams) {
         return null;
     }
 

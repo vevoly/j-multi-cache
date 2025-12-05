@@ -123,6 +123,18 @@ class JMultiCacheImpl implements JMultiCache, JMultiCacheOps {
     }
 
     @Override
+    public String computeKey(String multiCacheName, Object... keyParams) {
+        ResolvedJMultiCacheConfig config = configResolver.resolve(multiCacheName);
+        String[] stringParams = Arrays.stream(keyParams)
+                .map(String::valueOf)
+                .toArray(String[]::new);
+        // 解析 SpEL
+        String keyBody = JMultiCacheInternalHelper.getKeyValue(config.getKeyField(), stringParams);
+        // 拼接 Namespace
+        return JMultiCacheHelper.buildKey(config.getNamespace(), keyBody);
+    }
+
+    @Override
     public <V> int preloadMultiCache(String multiCacheName, Map<String, V> dataToCache) {
         return preloadCacheFromMapUnified(multiCacheName, dataToCache);
     }
@@ -739,15 +751,15 @@ class JMultiCacheImpl implements JMultiCache, JMultiCacheOps {
         String fullKey;
         if (keyParams.length == 1 && keyParams[0] instanceof String
                 && ((String) keyParams[0]).startsWith(config.getNamespace())) {
-            // 🌟 智能判断：如果传入的参数已经是完整的 Key (包含 namespace 前缀)
+            // 智能判断：如果传入的参数已经是完整的 Key (包含 namespace 前缀)
             // 这通常是 Listener 传过来的
             fullKey = (String) keyParams[0];
         } else {
-            // 常规情况：拼接 Key
             String[] stringParams = Arrays.stream(keyParams)
                     .map(String::valueOf)
                     .toArray(String[]::new);
-            fullKey = JMultiCacheHelper.buildKey(config.getNamespace(), stringParams);
+            String keyBody = JMultiCacheInternalHelper.getKeyValue(config.getKeyField(), stringParams);
+            fullKey = JMultiCacheHelper.buildKey(config.getNamespace(), keyBody);
         }
 
         // 3. 清除 L2 (Redis) / Evict L2 (Redis)
