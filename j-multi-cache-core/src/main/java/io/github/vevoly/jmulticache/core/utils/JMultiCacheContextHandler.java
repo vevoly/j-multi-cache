@@ -4,9 +4,9 @@ package io.github.vevoly.jmulticache.core.utils;
 import io.github.vevoly.jmulticache.api.config.ResolvedJMultiCacheConfig;
 import io.github.vevoly.jmulticache.api.utils.JMultiCacheHelper;
 import io.github.vevoly.jmulticache.core.config.JMultiCacheConfigResolver;
+import io.micrometer.common.util.StringUtils;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.StringUtils;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -108,7 +108,7 @@ public class JMultiCacheContextHandler<K> {
             return externalKeyBuilder;
         }
         // 手动调用路径：根据 YML 中的 keyField 配置，自动生成 keyBuilder / Manual Call Path: Auto-generate keyBuilder based on the keyField from YML configuration.
-        final String keyFieldExpr = StringUtils.trimToNull(finalConfig.getKeyField());
+        final String keyFieldExpr = finalConfig.getKeyField().trim();
 
         return (K id) -> {
 

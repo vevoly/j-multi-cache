@@ -39,7 +39,7 @@
     </scm>
 
     <properties>
-        <revision>1.0.2</revision>
+        <revision>1.0.3</revision>
         <java.version>17</java.version>
         <maven.compiler.source>${java.version}</maven.compiler.source>
         <maven.compiler.target>${java.version}</maven.compiler.target>
@@ -51,7 +51,6 @@
         <lombok.version>1.18.30</lombok.version>
         <commons-collections4.version>4.4</commons-collections4.version>
         <commons-codec.version>1.16.0</commons-codec.version>
-        <commons-lang3.version>3.14.0</commons-lang3.version>
     </properties>
 
     <modules>
@@ -114,11 +113,6 @@
                 <groupId>com.baomidou</groupId>
                 <artifactId>mybatis-plus-extension</artifactId>
                 <version>${mybatis-plus.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.apache.commons</groupId>
-                <artifactId>commons-lang3</artifactId>
-                <version>${commons-lang3.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.apache.commons</groupId>

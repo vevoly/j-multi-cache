@@ -1,26 +1,24 @@
 package io.github.vevoly.jmulticache.core.utils;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.core.type.TypeReference;
 import io.github.vevoly.jmulticache.api.config.ResolvedJMultiCacheConfig;
 import io.github.vevoly.jmulticache.api.constants.DefaultStorageTypes;
 import io.github.vevoly.jmulticache.api.constants.JMultiCacheConstants;
-import io.github.vevoly.jmulticache.api.message.JMultiCacheEvictMessage;
 import io.github.vevoly.jmulticache.api.utils.JMultiCacheHelper;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.codec.digest.DigestUtils;
+import org.apache.commons.collections4.CollectionUtils;
+import org.aspectj.lang.ProceedingJoinPoint;
+import org.aspectj.lang.reflect.MethodSignature;
+import org.springframework.aop.support.AopUtils;
 import org.springframework.core.DefaultParameterNameDiscoverer;
 import org.springframework.expression.EvaluationContext;
 import org.springframework.expression.EvaluationException;
 import org.springframework.expression.ExpressionParser;
 import org.springframework.expression.ParseException;
 import org.springframework.expression.spel.standard.SpelExpressionParser;
-import org.aspectj.lang.ProceedingJoinPoint;
-import org.aspectj.lang.reflect.MethodSignature;
-import org.springframework.aop.support.AopUtils;
-import com.fasterxml.jackson.core.type.TypeReference;
 import org.springframework.expression.spel.support.StandardEvaluationContext;
 import org.springframework.util.StringUtils;
-import org.apache.commons.collections4.CollectionUtils;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
@@ -349,7 +347,8 @@ public class JMultiCacheInternalHelper {
      */
     public static String getCacheKeyFromConfig(ResolvedJMultiCacheConfig config, String... keyValue) {
         String keyField = JMultiCacheConstants.DEFAULT_KEY_FIELD;
-        if (config != null && org.apache.commons.lang3.StringUtils.isNotBlank(config.getKeyField())) {
+        if (config != null &&
+                config.getKeyField() != null && config.getKeyField().trim().length() > 0) {
             keyField = config.getKeyField();
         }
         return JMultiCacheHelper.buildKey(config.getNamespace(), getKeyValue(keyField, keyValue));
@@ -376,7 +375,7 @@ public class JMultiCacheInternalHelper {
         try {
 
             // 如果为空则返回第一个 key 或 "global"
-            if (org.apache.commons.lang3.StringUtils.isBlank(keyField)) {
+            if (keyField == null || keyField.trim().length() == 0) {
                 return (keyValue == null || keyValue.length == 0) ? "global" : String.join(":", keyValue);
             }
 

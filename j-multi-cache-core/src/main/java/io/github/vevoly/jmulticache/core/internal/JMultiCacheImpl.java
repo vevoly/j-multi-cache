@@ -22,10 +22,10 @@ import io.github.vevoly.jmulticache.core.wrap.JMultiCacheResult;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.MapUtils;
-import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.cache.CacheManager;
 import org.springframework.util.StopWatch;
+import org.springframework.util.StringUtils;
 
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
@@ -338,7 +338,7 @@ class JMultiCacheImpl implements JMultiCache, JMultiCacheOps {
         if (CollectionUtils.isEmpty(ids)) {
             return new JMultiCacheResult<>(Collections.emptyMap(), config);
         }
-        if (StringUtils.isBlank(businessKey)) {
+        if (businessKey == null) {
             throw new IllegalStateException(LOG_PREFIX + "无法自动推断 businessKey，手动调用请传入 businessKey 参数");
         }
 
